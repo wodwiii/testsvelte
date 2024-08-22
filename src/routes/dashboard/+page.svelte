@@ -1,12 +1,23 @@
 <script>
 // @ts-nocheck
 
-	import { authHandlers, authStore } from "../../store/authStore";
+	import { authHandlers, authStore, subscription, fetchSubscription } from "../../store/authStore";
+    import { getSubscription } from '../../lib/firebase/subscription';
+    import { onMount, tick } from 'svelte';
 
+    let subscriptionData;
     let email;
-    authStore.subscribe((curr) =>{
+
+    authStore.subscribe(async(curr) =>{
         email = curr?.currentUser?.email;
+        await tick();
+        if(email){
+            await fetchSubscription();
+            subscriptionData = $subscription;
+        }
     })
+
+
 </script>
 
 
@@ -22,6 +33,12 @@
         {:else}
         <div>Loading...</div>
         {/if}
+        <div class="mt-8">
+            Subscription:
+            <p>Plan: {subscriptionData?.plan}</p>
+            <p>Expiration: {subscriptionData?.expires}</p>
+
+        </div>
         <div class="mt-4">
             <button on:click={authHandlers.logout} class="bg-[#fe0000] text-white text-sm font-bold py-2 px-4 rounded-lg hover:bg-[#a60505]">Logout</button>
         </div>
