@@ -6,7 +6,10 @@
 	import { auth } from '../lib/firebase/firebase.client';
 	import { authStore } from '../store/authStore';
 	import { browser } from '$app/environment';
-
+	/** @type {import('@sveltejs/adapter-vercel').Config} */
+	export const config = {
+		runtime: 'nodejs18.x'
+	};
 	onMount(() => {
 		const unsubscribe = auth.onAuthStateChanged((user) => {
 			console.log(user);
