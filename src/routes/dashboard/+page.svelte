@@ -2,12 +2,14 @@
 	// @ts-nocheck
 
 	import { authHandlers, authStore, subscription, fetchSubscription } from '../../store/authStore';
-	import { getSubscription } from '../../lib/firebase/subscription.client';
+	import { getSubscription } from '../../lib/firebase/subscription';
 	import { onMount, tick } from 'svelte';
-	import UpgradePlanModal from '../../components/PlanModal.svelte';
+	import UpgradeModal from '../../components/UpgradeModal.svelte';
+	import PaymentModal from '../../components/PaymentModal.svelte';
 	let subscriptionData;
 	let email;
 	let showModal = false;
+    let showPaymentModal = false;
 	authStore.subscribe(async (curr) => {
 		email = curr?.currentUser?.email;
 		if (curr.currentUser) {
@@ -15,9 +17,18 @@
 			subscriptionData = $subscription;
 		}
 	});
-	const closeModal = () => {
-		showModal = false;
-	};
+	const handleUpgrade = () => {
+        showPaymentModal = true;
+    };
+
+    const handlePaymentSuccess = () => {
+		
+    };
+
+    const closeModal = () => {
+        showModal = false;
+        showPaymentModal = false;
+    };
 </script>
 
 <div class="min-h-[100vh] text-center">
@@ -33,14 +44,14 @@
 		<div class="mt-8 text-[#fe0000] font-bold text-xl">
 			Subscription:
             <div class="text-sm font-normal text-black">
-                <p>Plan: <span class="font-bold">{subscriptionData?.plan}</span></p>
-                <p>Expiration: <span class="font-bold">{subscriptionData?.expires}</span></p>
+                <p>Plan: <span class="font-bold underline">{subscriptionData?.plan ? subscriptionData?.plan : "Loading..."}</span></p>
+                <p>Expiration: <span class="font-bold underline">{subscriptionData?.expires ? subscriptionData?.expires : "Loading..."}</span></p>
             </div>
 		</div>
 		<div class="mt-4">
 			<button
 				on:click={() => (showModal = true)}
-				class="bg-[#fe0000] text-white text-sm font-bold py-2 px-4 rounded-lg hover:bg-[#a60505]"
+				class="bg-[#fe0000] text-white text-sm font-bold py-2 px-4 rounded-lg hover:bg-[#a60505] w-[130px]"
 			>
 				Upgrade Plan
 			</button>
@@ -48,7 +59,7 @@
 		<div class="mt-4">
 			<button
 				on:click={authHandlers.logout}
-				class="bg-[#fe0000] text-white text-sm font-bold py-2 px-4 rounded-lg hover:bg-[#a60505]"
+				class="bg-[#fe0000] text-white text-sm font-bold py-2 px-4 rounded-lg hover:bg-[#a60505] w-[130px]"
 			>
 				Logout
 			</button>
@@ -56,4 +67,6 @@
 	</div>
 </div>
 
-<UpgradePlanModal showModal={showModal} closeModal={closeModal} />
+<UpgradeModal showModal={showModal} closeModal={closeModal} onUpgrade={handleUpgrade} />
+<PaymentModal showPaymentModal={showPaymentModal} closeModal={closeModal} onPaymentSuccess={handlePaymentSuccess} />
+

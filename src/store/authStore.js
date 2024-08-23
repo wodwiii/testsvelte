@@ -2,7 +2,7 @@
 import { writable } from "svelte/store";
 import {auth} from "../lib/firebase/firebase.client";
 import { createUserWithEmailAndPassword, GoogleAuthProvider, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, signOut, updatePassword } from "firebase/auth";
-import { getSubscription } from "$lib/firebase/subscription.client";
+import { getSubscription } from "$lib/firebase/subscription";
 
 export const authStore = writable({
     isLoading: false,
