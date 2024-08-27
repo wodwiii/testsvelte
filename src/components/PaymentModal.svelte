@@ -104,7 +104,7 @@ const handlePaymentSubmit = async () => {
 
 
         if (attachPaymentMethodResponse.data.attributes.next_action) {
-            window.open(attachPaymentMethodResponse.data.attributes.next_action.redirect.url, '_blank');
+            window.open(attachPaymentMethodResponse.data.attributes.next_action.redirect.url);
         } else {
             console.error('No redirect URL available for payment.');
         }
