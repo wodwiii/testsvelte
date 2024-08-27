@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { db } from '$lib/firebase/firebaseAdmin.js';
+import { db , auth } from '$lib/firebase/firebaseAdmin.js';
 
 export async function POST({ request }) {
   try {
@@ -20,13 +20,15 @@ export async function POST({ request }) {
       return json({ error: 'Payment not successful' }, { status: 400 });
     }
     const subscriptionData = {
-      description: paymentData.description
+      plan: "LITE",
+      expires: "27/09/2024"
     }
     console.log('Payment successful:');
     console.log(`Payer: ${payerDetails?.brand} - ${payerDetails?.last4}`);
     console.log(`Description: ${paymentDescription}`);
     console.log(`Amount Paid: ${paymentData?.amount / 100} ${paymentData?.currency}`);
-    await db.ref(`subscriptions/${email}`).set(subscriptionData)
+    const userID = (await auth.getUserByEmail(email)).uid;
+    await db.ref(`subscriptions/${userID}`).set(subscriptionData)
     return json({ message: 'Payment processed successfully' }, { status: 200 });
   } catch (error) {
     console.error('Error processing webhook:', error);

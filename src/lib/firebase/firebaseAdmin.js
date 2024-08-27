@@ -9,8 +9,9 @@ if (!admin.apps.length) {
             clientEmail: import.meta.env.VITE_CLIENTEMAIL,
         }
     ),
-    databaseURL: import.meta.env.VITE_DATABASEURL
+    databaseURL: import.meta.env.VITE_DATABASEURL,
   });
 }
 
 export const db = admin.database();
+export const auth = admin.auth();
