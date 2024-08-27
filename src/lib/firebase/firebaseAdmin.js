@@ -5,7 +5,7 @@ if (!admin.apps.length) {
     credential: admin.credential.cert(
         {
             projectId: import.meta.env.VITE_PROJECTID,
-            privateKey: import.meta.env.VITE_PRIVATEKEY,
+            privateKey: import.meta.env.VITE_PRIVATEKEY.replace(/\\n/g, '\n'),
             clientEmail: import.meta.env.VITE_CLIENTEMAIL,
         }
     ),
