@@ -8,7 +8,7 @@
 		attachPaymentMethod
 	} from '$lib/api-call';
 	import Modal from './Modal.svelte';
-
+    import {paymentIntentId} from '../store/paymentStore';
 	export let showPaymentModal = false;
 	export let closeModal;
 	export let onPaymentSuccess;
@@ -99,9 +99,10 @@
 
 			console.log('Payment method created:', paymentMethodResponse.data);
 
-			const paymentIntentId = subscriptionResponse.data.attributes.latest_invoice.payment_intent.id;
+			const paymentIntent = subscriptionResponse.data.attributes.latest_invoice.payment_intent.id;
+            paymentIntentId.set(paymentIntent);
 			const attachPaymentMethodResponse = await attachPaymentMethod(
-				paymentIntentId,
+				paymentIntent,
 				paymentMethodResponse.data.id
 			);
 
