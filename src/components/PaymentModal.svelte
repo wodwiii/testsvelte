@@ -114,16 +114,6 @@
 
 			if (attachPaymentMethodResponse.data.attributes.next_action) {
 				window.open(attachPaymentMethodResponse.data.attributes.next_action.redirect.url);
-				window.addEventListener('message', ev => {
-                    console.log('Listening for 3DS auth');
-                    console.log(ev.data);
-					if (ev.data === '3DS-authentication-complete') {
-						console.log('3DS authentication completed');
-						if (authWindow) {
-							authWindow.close();
-						}
-					}
-				});
 			} else {
 				console.error('No redirect URL available for payment.');
 			}

@@ -4,7 +4,7 @@ export async function POST({ request }) {
   try {
     const { data } = await request.json();
 
-
+    console.log(data);
     const eventType = data.attributes?.type;
     if (eventType !== 'payment.paid') {
       return json({ error: 'Unhandled event type' }, { status: 400 });
