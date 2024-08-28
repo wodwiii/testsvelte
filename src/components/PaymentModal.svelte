@@ -9,6 +9,7 @@
 	} from '$lib/api-call';
 	import Modal from './Modal.svelte';
     import {paymentIntentId} from '../store/paymentStore';
+	import { onMount, onDestroy } from 'svelte';
 	export let showPaymentModal = false;
 	export let closeModal;
 	export let onPaymentSuccess;
@@ -31,6 +32,10 @@
 	let showCardInformation = false;
 	let loading = '';
 
+    onMount(()=>{
+        paymentIntentId.useLocalStorage();
+    });
+    
 	const handlePaymentSubmit = async () => {
 		try {
 			loading = 'Processing';
@@ -114,7 +119,7 @@
 			console.log('Payment method attached:', attachPaymentMethodResponse.data);
 
 			if (attachPaymentMethodResponse.data.attributes.next_action) {
-				window.location.href(attachPaymentMethodResponse.data.attributes.next_action.redirect.url);
+				window.location.href = attachPaymentMethodResponse.data.attributes.next_action.redirect.url;
 			} else {
 				console.error('No redirect URL available for payment.');
 			}

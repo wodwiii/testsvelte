@@ -7,12 +7,13 @@
     let status = '';
 
     onMount(async () => {
+        paymentIntentId.useLocalStorage();
         try {
+            console.log(`Payment Intend:${$paymentIntentId}`)
             while (status !== 'succeeded' && status !== 'failed') {
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 status = await checkPaymentStatus($paymentIntentId);
             }
-
             if (status === 'succeeded') {
                 alert('Payment Successful!');
                 window.location.href = '/dashboard';

@@ -6,13 +6,13 @@ import { db, auth } from '$lib/firebase/firebaseAdmin.js';
 export async function POST({ request }) {
   try {
     const { data } = await request.json();
-
-    console.log(data);
     const eventType = data.attributes?.type;
     if (eventType !== 'payment.paid') {
       return json({ error: 'Unhandled event type' }, { status: 400 });
     }
+    console.log("Handling other functions asynchronously...");
     setTimeout(() => handleOtherFunc(data), 0); //run async
+    console.log("Webhook processed successfully, Status 200 sent!");
     return json({ message: 'Webhook processed successfully' }, { status: 200 });
   } catch (error) {
     console.error('Error processing webhook:', error);
@@ -24,8 +24,21 @@ export async function POST({ request }) {
 const handleOtherFunc = async (data) =>{
   try {
     const paymentData = data.attributes.data?.attributes;
-    const email = paymentData.billing?.email;
     const paymentDescription = paymentData?.description;
+    if(!paymentDescription){
+      console.error('No description available for this payment.');
+      return;
+    }
+    console.log('Payment successful:');
+    console.log(`Description: ${paymentDescription}`);
+
+
+    const email = paymentData.billing?.email;
+    if(!email){
+      console.error('No email found for the payor.');
+      return;
+    }
+
     const match = paymentDescription.match(/subs_\w+/);
     const subscriptionId = match ? match[0] : null;
 
@@ -40,9 +53,8 @@ const handleOtherFunc = async (data) =>{
       console.error('Failed to fetch subscription details');
       return;
     }
-    
-    console.log('Payment successful:');
-    console.log(`Description: ${paymentDescription}`);
+
+    console.error('Updating records on the database.');
     await setData(email, subscriptionId, subscriptionDetails);
   } catch (error) {
     
@@ -84,4 +96,5 @@ const setData = async (email, subscriptionId, subscriptionDetails) => {
 
   const userID = (await auth.getUserByEmail(email)).uid;
   await db.ref(`subscriptions/${userID}`).set(subscriptionData);
+  console.error('Successfully updated records on the database.');
 };

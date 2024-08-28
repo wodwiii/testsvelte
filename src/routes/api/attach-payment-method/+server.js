@@ -14,7 +14,8 @@ export async function POST({ request }) {
       body: JSON.stringify({
         data: {
           attributes: {
-            payment_method: paymentMethodId
+            payment_method: paymentMethodId,
+            return_url: 'https://testsvelte-payments.vercel.app/verify'
           }
         }
       })
