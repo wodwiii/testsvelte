@@ -14,11 +14,10 @@
 	export let showPaymentModal = false;
 	export let closeModal;
 	export let onPaymentSuccess;
-    let { isLoading, currentUser } = $authStore;
 	let firstName = 'Rod';
 	let lastName = 'Barien';
 	let phoneNumber = '+639123456789';
-	let email = currentUser?.email;
+	let email;
 	let billingAddress1 = 'San Nicolas';
 	let billingAddress2 = '';
 	let city = 'Makati City';
@@ -34,7 +33,9 @@
 	let loading = '';
 
     onMount(()=>{
+        let { isLoading, currentUser } = $authStore;
         paymentIntentId.useLocalStorage();
+        email = currentUser.email;
     });
     
 	const handlePaymentSubmit = async () => {
@@ -152,7 +153,7 @@
 		<div class="mb-4">
 			<label class="block text-gray-700"
 				>Email
-				<input type="text" class="mt-1 p-2 border rounded w-full" bind:value={email} disabled=true />
+				<input type="text" class="mt-1 p-2 border rounded w-full"  bind:value={email} required/>
 			</label>
 		</div>
 		<div class="mb-4">
