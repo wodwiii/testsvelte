@@ -52,3 +52,13 @@ export const createCheckoutSession = async (plan) => {
         throw error;
     }
 };
+
+export const cancelSubscription = async (subscriptionId, uid) => {
+    try {
+        const response = await post('/api/cancel-subscription', { subscriptionId,uid });
+        return response;
+    } catch (error) {
+        console.error('Error cancelling subscription:', error);
+        throw error;
+    }
+};

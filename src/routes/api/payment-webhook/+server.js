@@ -2,6 +2,7 @@
 
 import { json } from '@sveltejs/kit';
 import { db, auth } from '$lib/firebase/firebaseAdmin.js';
+import axios from 'axios';
 
 export async function POST({ request }) {
   try {
@@ -50,7 +51,7 @@ const handleOtherFunc = async (data) =>{
     const subscriptionDetails = await fetchSubscriptionDetails(subscriptionId);
 
     if (!subscriptionDetails) {
-      console.error('Failed to fetch subscription details');
+      console.error('Subscription details not found.');
       return;
     }
 
@@ -63,22 +64,15 @@ const handleOtherFunc = async (data) =>{
 
 
 const fetchSubscriptionDetails = async (subscriptionId) => {
-  const options = {
-    method: 'GET',
-    headers: {
-      accept: 'application/json',
-      authorization: `${import.meta.env.VITE_PAYMONGO_KEY2}`
-    }
-  };
-
   try {
-    const response = await fetch(`https://api.paymongo.com/v1/subscriptions/${subscriptionId}`, options);
-    if (!response.ok) {
-      console.error('Failed to fetch subscription details:', response.statusText);
-      return null;
-    }
-    const data = await response.json();
-    return data.data;
+    const response = await axios.get(`https://api.paymongo.com/v1/subscriptions/${subscriptionId}`, {
+      headers: {
+        accept: 'application/json',
+        authorization: `${import.meta.env.VITE_PAYMONGO_KEY2}`
+      },
+      timeout: 10000
+    });
+    return response.data.data;
   } catch (err) {
     console.error('Error fetching subscription details:', err);
     return null;

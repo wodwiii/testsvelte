@@ -7,14 +7,17 @@
 	import { onMount, tick } from 'svelte';
 	import UpgradeModal from '../../components/UpgradeModal.svelte';
 	import PaymentModal from '../../components/PaymentModal.svelte';
+	import ManageModal from '../../components/ManageModal.svelte';
 	let subscriptionData;
 	let email;
+	let uid;
 	let showModal = false;
     let showPaymentModal = false;
-
+	let showManageModal = false;
 
 	authStore.subscribe(async (curr) => {
 		email = curr?.currentUser?.email;
+		uid = curr?.currentUser?.uid;
 		if (curr.currentUser) {
 			await fetchSubscription();
 			subscriptionData = $subscription;
@@ -31,6 +34,7 @@
     const closeModal = () => {
         showModal = false;
         showPaymentModal = false;
+		showManageModal = false;
     };
 </script>
 
@@ -64,6 +68,14 @@
 		</div>
 		<div class="mt-4">
 			<button
+				on:click={() => (showManageModal = true)}
+				class="bg-[#fe0000] text-white text-sm font-bold py-2 px-4 rounded-lg hover:bg-[#a60505] w-[130px]"
+			>
+				Manage Plan
+			</button>
+		</div>
+		<div class="mt-4">
+			<button
 				on:click={authHandlers.logout}
 				class="bg-[#fe0000] text-white text-sm font-bold py-2 px-4 rounded-lg hover:bg-[#a60505] w-[130px]"
 			>
@@ -73,7 +85,7 @@
 	</div>
 </div>
 
-
+<ManageModal showManageModal={showManageModal} closeModal={closeModal} uid={uid}/>
 <UpgradeModal showModal={showModal} closeModal={closeModal} onUpgrade={handleUpgrade} />
 <PaymentModal showPaymentModal={showPaymentModal} closeModal={closeModal} onPaymentSuccess={handlePaymentSuccess} />
 

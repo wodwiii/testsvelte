@@ -3,7 +3,7 @@ import { json } from '@sveltejs/kit';
 export async function POST({ request }) {
   try {
     const { paymentIntentId, paymentMethodId } = await request.json();
-
+    
     const options = {
       method: 'POST',
       headers: {
