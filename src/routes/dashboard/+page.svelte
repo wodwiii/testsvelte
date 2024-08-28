@@ -11,7 +11,7 @@
 	let email;
 	let showModal = false;
     let showPaymentModal = false;
-	let showLoadingPopup = false;
+
 
 	authStore.subscribe(async (curr) => {
 		email = curr?.currentUser?.email;
@@ -25,27 +25,8 @@
     };
 
     const handlePaymentSuccess = async() => {
-		showLoadingPopup = true;
-		let status = '';
-		while (status !== 'succeeded' && status !== 'failed') {
-			await new Promise(resolve => setTimeout(resolve, 2000));
-			status = await checkPaymentStatus($paymentIntentId);
-		}
-		showLoadingPopup = false;
-		if (status === 'succeeded') {
-			alert('Payment Successful!');
-			await fetchSubscription();
-		} else {
-			alert('Payment Failed. Please try again.');
-		}
+		
     };
-	const checkPaymentStatus = async (paymentIntentId) => {
-		const url = new URL('/api/check-payment-status', window.location.origin);
-		url.searchParams.append('id', paymentIntentId);
-		const response = await fetch(url.toString());
-		const data = await response.json();
-		return data.status;
-	};
 
     const closeModal = () => {
         showModal = false;
@@ -63,12 +44,15 @@
 		{:else}
 			<div>Loading...</div>
 		{/if}
-		<div class="mt-8 text-[#fe0000] font-bold text-xl">
-			Subscription:
-            <div class="text-sm font-normal text-black">
-                <p>Plan: <span class="font-bold underline">{subscriptionData?.plan ? subscriptionData?.plan : "Loading..."}</span></p>
-                <p>Expiration: <span class="font-bold underline">{subscriptionData?.expires ? subscriptionData?.expires : "Loading..."}</span></p>
-            </div>
+		<div class="text-sm font-normal text-black">
+			<p>Plan: <span class="font-bold underline">{subscriptionData?.plan || "Loading..."}</span></p>
+			{#if subscriptionData?.status === "active"}
+				<p>Next Renewal: <span class="font-bold underline">{subscriptionData?.next_billing_schedule || "Loading..."}</span></p>
+			{:else if subscriptionData?.status === "cancelled"}
+				<p>Expiration: <span class="font-bold underline">{subscriptionData?.next_billing_schedule || "Loading..."}</span></p>
+			{:else}
+				<p><span class="font-bold underline">Forever</span></p>
+			{/if}
 		</div>
 		<div class="mt-4">
 			<button
@@ -89,13 +73,6 @@
 	</div>
 </div>
 
-{#if showLoadingPopup}
-	<div class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-		<div class="bg-white p-4 rounded-lg shadow-lg">
-			<p>Processing payment...</p>
-		</div>
-	</div>
-{/if}
 
 <UpgradeModal showModal={showModal} closeModal={closeModal} onUpgrade={handleUpgrade} />
 <PaymentModal showPaymentModal={showPaymentModal} closeModal={closeModal} onPaymentSuccess={handlePaymentSuccess} />

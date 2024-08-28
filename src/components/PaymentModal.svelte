@@ -114,7 +114,7 @@
 			console.log('Payment method attached:', attachPaymentMethodResponse.data);
 
 			if (attachPaymentMethodResponse.data.attributes.next_action) {
-				window.open(attachPaymentMethodResponse.data.attributes.next_action.redirect.url);
+				window.location.href(attachPaymentMethodResponse.data.attributes.next_action.redirect.url);
 			} else {
 				console.error('No redirect URL available for payment.');
 			}
