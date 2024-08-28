@@ -11,7 +11,6 @@ export async function POST({ request }) {
     if (eventType !== 'payment.paid') {
       return json({ error: 'Unhandled event type' }, { status: 400 });
     }
-    console.log("Handling other functions asynchronously...");
     setTimeout(() => handleOtherFunc(data), 0); //run async
     console.log("Webhook processed successfully, Status 200 sent!");
     return json({ message: 'Webhook processed successfully' }, { status: 200 });
@@ -23,6 +22,7 @@ export async function POST({ request }) {
 
 
 const handleOtherFunc = async (data) =>{
+  console.log("Handling other functions asynchronously...");
   try {
     const paymentData = data.attributes.data?.attributes;
     const paymentDescription = paymentData?.description;
@@ -39,6 +39,7 @@ const handleOtherFunc = async (data) =>{
       console.error('No email found for the payor.');
       return;
     }
+    console.log(`Payor email: ${email}`);
 
     const match = paymentDescription.match(/subs_\w+/);
     const subscriptionId = match ? match[0] : null;
@@ -47,7 +48,8 @@ const handleOtherFunc = async (data) =>{
       console.error('Subscription ID not found in description');
       return;
     }
-
+    
+    console.log(`Fetching subscription details for ${subscriptionId}`);
     const subscriptionDetails = await fetchSubscriptionDetails(subscriptionId);
 
     if (!subscriptionDetails) {
@@ -55,7 +57,7 @@ const handleOtherFunc = async (data) =>{
       return;
     }
 
-    console.error('Updating records on the database.');
+    console.log('Updating records on the database.');
     await setData(email, subscriptionId, subscriptionDetails);
   } catch (error) {
     
@@ -70,7 +72,7 @@ const fetchSubscriptionDetails = async (subscriptionId) => {
         accept: 'application/json',
         authorization: `${import.meta.env.VITE_PAYMONGO_KEY2}`
       },
-      timeout: 10000
+      timeout: 30000
     });
     return response.data.data;
   } catch (err) {

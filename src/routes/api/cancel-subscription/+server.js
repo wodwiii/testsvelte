@@ -37,11 +37,15 @@ export async function POST({ request }) {
 
 
 const setData = async(data, uid)=>{
+  if (!data || !data.attributes) {
+    console.error('Invalid data structure:', data);
+    return;
+  }
   const subscriptionData = {
     subs_id: data.id,
-    plan: data.attributes.plan.description,
-    next_billing_schedule: data.attributes.next_billing_schedule,
-    status: data.attributes.status
+    plan: data.attributes.plan.description || 'Unknown',
+    next_billing_schedule: data.attributes.next_billing_schedule || 'Unknown',
+    status: data.attributes.status || 'Unknown'
   };
   await db.ref(`subscriptions/${uid}`).set(subscriptionData);
   console.error('Successfully updated records on the database.');
