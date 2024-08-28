@@ -91,5 +91,5 @@ const setData = async (email, subscriptionId, subscriptionDetails) => {
 
   const userID = (await auth.getUserByEmail(email)).uid;
   await db.ref(`subscriptions/${userID}`).set(subscriptionData);
-  console.error('Successfully updated records on the database.');
+  console.log('Successfully updated records on the database.');
 };

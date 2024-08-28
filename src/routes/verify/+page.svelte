@@ -19,6 +19,7 @@
                 window.location.href = '/dashboard';
             } else {
                 alert('Payment Failed. Please try again.');
+                window.location.href = '/dashboard';
             }
         } catch (error) {
             console.error('Error checking payment status:', error);
@@ -42,7 +43,7 @@
 </script>
 
 <div class="min-h-[100vh] text-center">
-    <div>
+    <div class="font-bold text-3xl text-[#fe0000] mt-10">
         Verifying payment...
     </div>
 </div>

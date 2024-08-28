@@ -14,13 +14,15 @@
 	let showModal = false;
     let showPaymentModal = false;
 	let showManageModal = false;
-
+	let subStatus;
 	authStore.subscribe(async (curr) => {
 		email = curr?.currentUser?.email;
 		uid = curr?.currentUser?.uid;
 		if (curr.currentUser) {
 			await fetchSubscription();
 			subscriptionData = $subscription;
+			subStatus = subscriptionData?.status;
+			console.log(subscriptionData);
 		}
 	});
 	const handleUpgrade = () => {
@@ -50,9 +52,9 @@
 		{/if}
 		<div class="text-sm font-normal text-black">
 			<p>Plan: <span class="font-bold underline">{subscriptionData?.plan || "Loading..."}</span></p>
-			{#if subscriptionData?.status === "active"}
+			{#if subStatus === "active"}
 				<p>Next Renewal: <span class="font-bold underline">{subscriptionData?.next_billing_schedule || "Loading..."}</span></p>
-			{:else if subscriptionData?.status === "cancelled"}
+			{:else if subStatus === "cancelled"}
 				<p>Expiration: <span class="font-bold underline">{subscriptionData?.next_billing_schedule || "Loading..."}</span></p>
 			{:else}
 				<p><span class="font-bold underline">Forever</span></p>
@@ -69,7 +71,9 @@
 		<div class="mt-4">
 			<button
 				on:click={() => (showManageModal = true)}
-				class="bg-[#fe0000] text-white text-sm font-bold py-2 px-4 rounded-lg hover:bg-[#a60505] w-[130px]"
+				disabled={subStatus === "cancelled"}
+				class="text-sm font-bold py-2 px-4 rounded-lg w-[130px]
+				{subStatus === "cancelled" ? 'bg-gray-400 text-gray-700 cursor-not-allowed' : 'bg-[#fe0000] text-white hover:bg-[#a60505]'}"
 			>
 				Manage Plan
 			</button>

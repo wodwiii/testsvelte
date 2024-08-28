@@ -9,25 +9,26 @@
 	} from '$lib/api-call';
 	import Modal from './Modal.svelte';
     import {paymentIntentId} from '../store/paymentStore';
+    import {authStore} from '../store/authStore'
 	import { onMount, onDestroy } from 'svelte';
 	export let showPaymentModal = false;
 	export let closeModal;
 	export let onPaymentSuccess;
-
-	let firstName = '';
-	let lastName = '';
-	let phoneNumber = '';
-	let email = '';
-	let billingAddress1 = '';
+    let { isLoading, currentUser } = $authStore;
+	let firstName = 'Rod';
+	let lastName = 'Barien';
+	let phoneNumber = '+639123456789';
+	let email = currentUser?.email;
+	let billingAddress1 = 'San Nicolas';
 	let billingAddress2 = '';
-	let city = '';
-	let state = '';
-	let postalCode = '';
-	let country = '';
-	let cardNumber = '';
-	let expirationMonth = '';
-	let expirationYear = '';
-	let cvc = '';
+	let city = 'Makati City';
+	let state = 'Metro Manila';
+	let postalCode = '1208';
+	let country = 'PH';
+	let cardNumber = '4120000000000007';
+	let expirationMonth = '12';
+	let expirationYear = '2025';
+	let cvc = '123';
 	let showBillingAddress = false;
 	let showCardInformation = false;
 	let loading = '';
@@ -151,7 +152,7 @@
 		<div class="mb-4">
 			<label class="block text-gray-700"
 				>Email
-				<input type="text" class="mt-1 p-2 border rounded w-full" bind:value={email} required />
+				<input type="text" class="mt-1 p-2 border rounded w-full" bind:value={email} disabled=true />
 			</label>
 		</div>
 		<div class="mb-4">

@@ -14,6 +14,7 @@
             console.log('Subscription cancelled:', response);
             alert('Subscription cancelled successfully!');
             closeModal();
+            window.location.reload();
         } catch (error) {
             console.error('Error:', error);
             alert('An error occurred while cancelling the subscription.');
@@ -22,6 +23,8 @@
 
     const handleChangePayment = async () => {
         alert('Change payment method functionality is not implemented yet.');
+        closeModal();
+        window.location.reload();
     };
 </script>
   

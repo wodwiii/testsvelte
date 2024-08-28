@@ -27,7 +27,7 @@ export async function POST({ request }) {
       return json({ error: 'Failed to cancel subscription', details: errorData }, { status: response.status });
     }
     const data = await response.json();
-    await setData(data, uid)
+    await setData(data.data, uid)
     return json({ message: 'Subscription cancelled successfully', data }, { status: 200 });
   } catch (error) {
     console.error('Error handling cancellation request:', error);
@@ -43,9 +43,9 @@ const setData = async(data, uid)=>{
   }
   const subscriptionData = {
     subs_id: data.id,
-    plan: data.attributes.plan.description || 'Unknown',
-    next_billing_schedule: data.attributes.next_billing_schedule || 'Unknown',
-    status: data.attributes.status || 'Unknown'
+    plan: data.attributes.plan.description,
+    next_billing_schedule: data.attributes.next_billing_schedule ,
+    status: data.attributes.status
   };
   await db.ref(`subscriptions/${uid}`).set(subscriptionData);
   console.error('Successfully updated records on the database.');
