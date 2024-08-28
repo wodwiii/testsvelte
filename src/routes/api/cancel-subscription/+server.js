@@ -20,7 +20,7 @@ export async function POST({ request }) {
     };
 
     const response = await fetch(`https://api.paymongo.com/v1/subscriptions/${subscriptionId}/cancel`, options);
-    
+    console.log(response);
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Failed to cancel subscription:', errorData);

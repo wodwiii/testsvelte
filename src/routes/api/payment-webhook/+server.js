@@ -11,7 +11,7 @@ export async function POST({ request }) {
     if (eventType !== 'payment.paid') {
       return json({ error: 'Unhandled event type' }, { status: 400 });
     }
-    setTimeout(() => handleOtherFunc(data), 0); //run async
+    await handleOtherFunc(data);
     console.log("Webhook processed successfully, Status 200 sent!");
     return json({ message: 'Webhook processed successfully' }, { status: 200 });
   } catch (error) {
@@ -22,7 +22,6 @@ export async function POST({ request }) {
 
 
 const handleOtherFunc = async (data) =>{
-  console.log("Handling other functions asynchronously...");
   try {
     const paymentData = data.attributes.data?.attributes;
     const paymentDescription = paymentData?.description;

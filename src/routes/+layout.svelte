@@ -8,7 +8,8 @@
 	import { browser } from '$app/environment';
 	/** @type {import('@sveltejs/adapter-vercel').Config} */
 	export const config = {
-		runtime: 'nodejs18.x'
+		runtime: 'nodejs18.x',
+		maxDuration: 30
 	};
 	onMount(() => {
 		const unsubscribe = auth.onAuthStateChanged((user) => {
