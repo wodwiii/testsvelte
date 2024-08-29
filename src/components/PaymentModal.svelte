@@ -1,5 +1,6 @@
 <script>
-	// @ts-nocheck
+// @ts-nocheck
+
 
 	import {
 		createCustomer,
@@ -8,12 +9,13 @@
 		attachPaymentMethod
 	} from '$lib/api-call';
 	import Modal from './Modal.svelte';
-    import {paymentIntentId} from '../store/paymentStore';
+
     import {authStore} from '../store/authStore'
+	import {planParams} from '../store/paymentStore';
 	import { onMount, onDestroy } from 'svelte';
+	import { storeFirebase } from '$lib/firebase/subscription';
 	export let showPaymentModal = false;
 	export let closeModal;
-	export let onPaymentSuccess;
 	let firstName = 'Rod';
 	let lastName = 'Barien';
 	let phoneNumber = '+639123456789';
@@ -31,12 +33,10 @@
 	let showBillingAddress = false;
 	let showCardInformation = false;
 	let loading = '';
-
-    onMount(()=>{
-        let { isLoading, currentUser } = $authStore;
-        paymentIntentId.useLocalStorage();
-        email = currentUser.email;
-    });
+	let uid;
+	$: email = $authStore.currentUser?.email;
+	$: uid = $authStore.currentUser?.uid;
+	
     
 	const handlePaymentSubmit = async () => {
 		try {
@@ -68,7 +68,14 @@
 				console.error('Subscription creation failed:', subscriptionResponse.error);
 				return;
 			}
+			const subscriptionData = {
+				UID: uid,
+				planType: $planParams.plan,
+				ID: subscriptionResponse.data.id,
+				data: subscriptionResponse.data
 
+			}
+			await storeFirebase(subscriptionData);
 			console.log('Subscription created:', subscriptionResponse.data);
 
 			const paymentMethodData = {
@@ -107,7 +114,7 @@
 			console.log('Payment method created:', paymentMethodResponse.data);
 
 			const paymentIntent = subscriptionResponse.data.attributes.latest_invoice.payment_intent.id;
-            paymentIntentId.set(paymentIntent);
+
 			const attachPaymentMethodResponse = await attachPaymentMethod(
 				paymentIntent,
 				paymentMethodResponse.data.id
@@ -125,7 +132,6 @@
 			} else {
 				console.error('No redirect URL available for payment.');
 			}
-			onPaymentSuccess();
 			closeModal();
 		} catch (error) {
 			console.error('Error during payment submission:', error);

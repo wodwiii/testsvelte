@@ -3,7 +3,7 @@
 
     import { createCheckoutSession } from '$lib/api-call';
 	import Modal from './Modal.svelte';
-
+    import { planParams } from '../store/paymentStore';
     export let showModal = false;
     export let closeModal;
     export let onUpgrade;
@@ -15,6 +15,10 @@
         try {
             loading = plan;
             const paymentType = autoSubscribe ? 'Recurring' : 'One-Time';
+            planParams.set({
+                plan: plan,
+                recurring: autoSubscribe
+            })
             console.log(`Upgrading to ${plan} plan with ${paymentType} payment`);
 
             if (!autoSubscribe) {

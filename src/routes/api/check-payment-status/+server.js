@@ -2,11 +2,11 @@
 import { json } from '@sveltejs/kit';
 
 export async function GET({ url }) {
-	const paymentIntentId = url.searchParams.get('id');
-    if(!paymentIntentId){
+	const subscriptionId = url.searchParams.get('id');
+    if(!subscriptionId){
         return json({ error: 'No payment intend id' }, { status: 400 });
     }
-	const response = await fetch(`https://api.paymongo.com/v1/payment_intents/${paymentIntentId}`, {
+	const response = await fetch(`https://api.paymongo.com/v1/subscriptions/${subscriptionId}`, {
 		method: 'GET',
 		headers: {
 			accept: 'application/json',
@@ -15,5 +15,5 @@ export async function GET({ url }) {
 	});
 
 	const data = await response.json();
-	return json({ status: data.data.attributes.status });
+	return json(data);
 }

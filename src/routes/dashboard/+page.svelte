@@ -2,36 +2,32 @@
 	// @ts-nocheck
 
 	import { authHandlers, authStore, subscription, fetchSubscription } from '../../store/authStore';
-	import {paymentIntentId} from '../../store/paymentStore';
-	import { getSubscription } from '../../lib/firebase/subscription';
-	import { onMount, tick } from 'svelte';
+	import { onMount } from 'svelte';
 	import UpgradeModal from '../../components/UpgradeModal.svelte';
 	import PaymentModal from '../../components/PaymentModal.svelte';
 	import ManageModal from '../../components/ManageModal.svelte';
+
 	let subscriptionData;
 	let email;
 	let uid;
 	let showModal = false;
     let showPaymentModal = false;
 	let showManageModal = false;
-	let subStatus;
+
 	authStore.subscribe(async (curr) => {
 		email = curr?.currentUser?.email;
 		uid = curr?.currentUser?.uid;
 		if (curr.currentUser) {
 			await fetchSubscription();
 			subscriptionData = $subscription;
-			subStatus = subscriptionData?.status;
 			console.log(subscriptionData);
 		}
 	});
+
 	const handleUpgrade = () => {
         showPaymentModal = true;
     };
 
-    const handlePaymentSuccess = async() => {
-		
-    };
 
     const closeModal = () => {
         showModal = false;
@@ -51,13 +47,11 @@
 			<div>Loading...</div>
 		{/if}
 		<div class="text-sm font-normal text-black">
-			<p>Plan: <span class="font-bold underline">{subscriptionData?.plan || "Loading..."}</span></p>
-			{#if subStatus === "active"}
-				<p>Next Renewal: <span class="font-bold underline">{subscriptionData?.next_billing_schedule || "Loading..."}</span></p>
-			{:else if subStatus === "cancelled"}
-				<p>Expiration: <span class="font-bold underline">{subscriptionData?.next_billing_schedule || "Loading..."}</span></p>
-			{:else}
-				<p><span class="font-bold underline">Forever</span></p>
+			<p>Plan: <span class="font-bold underline">{subscriptionData?.subscriptionPlan || "Loading..."}</span></p>
+			{#if subscriptionData?.status === "active"}
+				<p>Next Renewal: <span class="font-bold underline">{subscriptionData?.renewalDate || "Loading..."}</span></p>
+			{:else if subscriptionData?.status.includes("cancelled")}
+				<p>Expiration: <span class="font-bold underline">{subscriptionData?.renewalDate || "Loading..."}</span></p>
 			{/if}
 		</div>
 		<div class="mt-4">
@@ -71,9 +65,9 @@
 		<div class="mt-4">
 			<button
 				on:click={() => (showManageModal = true)}
-				disabled={subStatus === "cancelled"}
+				disabled={subscriptionData?.status.includes("cancelled") || subscriptionData?.subscriptionPlan === "FREE"}
 				class="text-sm font-bold py-2 px-4 rounded-lg w-[130px]
-				{subStatus === "cancelled" ? 'bg-gray-400 text-gray-700 cursor-not-allowed' : 'bg-[#fe0000] text-white hover:bg-[#a60505]'}"
+				{subscriptionData?.status.includes("cancelled") || subscriptionData?.subscriptionPlan === "FREE" ? 'bg-gray-400 text-gray-700 cursor-not-allowed' : 'bg-[#fe0000] text-white hover:bg-[#a60505]'}"
 			>
 				Manage Plan
 			</button>
@@ -91,5 +85,4 @@
 
 <ManageModal showManageModal={showManageModal} closeModal={closeModal} uid={uid}/>
 <UpgradeModal showModal={showModal} closeModal={closeModal} onUpgrade={handleUpgrade} />
-<PaymentModal showPaymentModal={showPaymentModal} closeModal={closeModal} onPaymentSuccess={handlePaymentSuccess} />
-
+<PaymentModal showPaymentModal={showPaymentModal} closeModal={closeModal} />

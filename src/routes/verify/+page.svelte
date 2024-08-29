@@ -1,49 +1,125 @@
 <script>
 // @ts-nocheck
 
-    import { paymentIntentId } from '../../store/paymentStore';
-    import { onMount } from 'svelte';
+	import { onMount } from 'svelte';
+	import { authStore } from '../../store/authStore';
+	import { getDatabase, ref, get } from 'firebase/database';
+	import { database } from '../../lib/firebase/firebase.client';
 
-    let status = '';
+	let status = '';
+	let userID = '';
+	let unsubscribe;
 
-    onMount(async () => {
-        paymentIntentId.useLocalStorage();
-        try {
-            console.log(`Payment Intend:${$paymentIntentId}`)
-            while (status !== 'succeeded' && status !== 'failed') {
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                status = await checkPaymentStatus($paymentIntentId);
-            }
-            if (status === 'succeeded') {
-                alert('Payment Successful!');
-                window.location.href = '/dashboard';
-            } else {
-                alert('Payment Failed. Please try again.');
-                window.location.href = '/dashboard';
-            }
-        } catch (error) {
-            console.error('Error checking payment status:', error);
-            alert('An error occurred while verifying the payment. Please try again.');
-        }
-    });
+	onMount(() => {
+		unsubscribe = authStore.subscribe(async (auth) => {
+			if (auth.currentUser) {
+				userID = auth.currentUser.uid;
+				await verifyPayment();
+			}
+		});
 
+		return () => {
+			if (unsubscribe) unsubscribe();
+		};
+	});
 
-    const checkPaymentStatus = async (paymentIntentId) => {
-        const url = new URL('/api/check-payment-status', window.location.origin);
-        url.searchParams.append('id', paymentIntentId);
+	async function verifyPayment() {
+		try {
+			const subscriptionID = await getSubscriptionForUser(userID);
+			if (!subscriptionID) {
+				alert('No subscription found.');
+				window.location.href = '/dashboard';
+				return;
+			}
+			while (status !== 'succeeded' && status !== 'failed') {
+				await new Promise((resolve) => setTimeout(resolve, 2000));
+				const data = await checkPaymentStatus(subscriptionID);
+				status = data.data.attributes.latest_invoice.payment_intent.status;
 
-        const response = await fetch(url.toString());
-        if (!response.ok) {
-            throw new Error('Failed to fetch payment status');
-        }
+				if (status === 'succeeded') {
+					alert('Payment Successful!');
+					await verifyTransaction(userID, subscriptionID);
+					window.location.href = '/dashboard';
+					break;
+				} else if (status === 'failed') {
+					alert('Payment Failed. Please try again.');
+					window.location.href = '/dashboard';
+					break;
+				}
+			}
+		} catch (error) {
+			console.error('Error checking payment status:', error);
+			alert('An error occurred while verifying the payment. Please try again.');
+		}
+	}
 
-        const data = await response.json();
-        return data.status;
-    };
+	const getSubscriptionForUser = async (userID) => {
+		try {
+			const path = `subs`;
+			const dbRef = ref(database, path);
+			const snapshot = await get(dbRef);
+			console.log(`Logging data for ${userID}`);
+			if (snapshot.exists()) {
+				const allSubscriptions = snapshot.val();
+				const userSubscriptionKey = Object.keys(allSubscriptions).find(key => key.startsWith(userID));
+				if (userSubscriptionKey) {
+					const [_, __, ___, subscriptionIdPart] = userSubscriptionKey.split('_');
+                    const subscriptionId = `subs_${subscriptionIdPart}`;
+					console.log(`Found subscription ID: ${subscriptionId} for user: ${userID}`);
+					return subscriptionId;
+				} else {
+					console.log('No subscriptions found for user:', userID);
+					return null;
+				}
+			} else {
+				console.log('No data found for the specified path.');
+				return null;
+			}
+		} catch (error) {
+			console.error('Error retrieving subscriptions:', error);
+			throw error;
+		}
+	};
+
+	const verifyTransaction = async (userID, subscriptionID) => {
+		try {
+			const response = await fetch('/api/verify-transactions', {
+				method: 'POST',
+				headers: {
+					Accept: 'application/json',
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					uid: userID,
+					subs_id: subscriptionID
+				})
+			});
+
+			if (!response.ok) {
+				throw new Error('Failed to verify transaction');
+			}
+
+			const data = await response.json();
+			console.log('Verification response:', data);
+		} catch (error) {
+			console.error('Error verifying transaction:', error);
+		}
+	};
+
+	const checkPaymentStatus = async (subscriptionID) => {
+		const url = new URL('/api/check-payment-status', window.location.origin);
+		url.searchParams.append('id', subscriptionID);
+
+		const response = await fetch(url.toString());
+		if (!response.ok) {
+			throw new Error('Failed to fetch payment status');
+		}
+
+		const data = await response.json();
+		return data;
+	};
 </script>
 
 <div class="min-h-[100vh] text-center">
-    <div class="font-bold text-3xl text-[#fe0000] mt-10">
-        Verifying payment...
-    </div>
+	<div class="font-bold text-3xl text-[#fe0000] mt-16">Verifying payment...</div>
 </div>

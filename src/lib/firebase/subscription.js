@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { database } from './firebase.client';
 import { ref, get, set } from "firebase/database";
 import { auth } from './firebase.client';
@@ -5,34 +6,55 @@ import { auth } from './firebase.client';
 export const getSubscription = async () => {
   const user = auth.currentUser;
   if (user) {
-    const subscriptionRef = ref(database, 'subscriptions/' + user.uid);
-    return get(subscriptionRef).then(snapshot => {
+    const verifiedRef = ref(database, 'verified');
+    try {
+      const snapshot = await get(verifiedRef);
       if (snapshot.exists()) {
-        return snapshot.val();
-      } else {
-        const subs = addSubscription(user.uid, "FREE", "FOREVER");
-        return subs;
+        const allVerified = snapshot.val();
+        const userSubscriptionKey = Object.keys(allVerified).find(key => key.startsWith(user.uid));
+        
+        if (userSubscriptionKey) {
+          const subscriptionData = allVerified[userSubscriptionKey];
+          const planType = userSubscriptionKey.split('_')[1];
+          
+          return {
+            subs_id: subscriptionData.data.id,
+            status: subscriptionData.status,
+            renewalDate: subscriptionData.data.attributes.next_billing_schedule,
+            subscriptionPlan: planType
+          };
+        }
       }
-    });
+      return {
+        status: "active",
+        renewalDate: "FOREVER",
+        subscriptionPlan: "FREE"
+      };
+    } catch (error) {
+      console.error("Error fetching subscription:", error);
+      throw error;
+    }
   } else {
     throw new Error("No user is logged in");
   }
 };
 
-// @ts-ignore
-export const addSubscription = async (userId, plan, expires) => {
+
+export const storeFirebase = async (jsonResponse) => {
   try {
-    const subscriptionRef = ref(database, 'subscriptions/' + userId);
-    await set(subscriptionRef, {
-      plan: plan,
-      expires: expires
+    const { UID, planType, ID, data } = jsonResponse;
+    const planSuffix = planType === 'Pro' ? 'Pro' : 'Lite';
+    const path = `${UID}_${planSuffix}_${ID}`;
+    const dbRef = ref(database,'subs/'+ path);
+
+    await set(dbRef, {
+      data:data,
+      created_at: Date.now(),
     });
-    console.log('Subscription added for user:', userId);
-    return get(subscriptionRef).then(snapshot =>{
-      return snapshot.val();
-    });
+
+    console.log(`Data stored successfully at path: ${path}`);
   } catch (error) {
-    console.error('Error adding subscription:', error);
-    return null;
+    console.error('Error storing data in Firebase:', error);
+    throw error;
   }
 };

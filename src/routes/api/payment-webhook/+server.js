@@ -57,13 +57,31 @@ const handleOtherFunc = async (data) =>{
     }
 
     console.log('Updating records on the database.');
-    await setData(email, subscriptionId, subscriptionDetails);
+    const userID = (await auth.getUserByEmail(email)).uid;
+    await storeFirebase(userID, subscriptionDetails, data )
+    await verifyTransaction(userID, subscriptionId);
   } catch (error) {
     
   }
 }
 
-
+const verifyTransaction = async (userID, subscriptionId) =>{
+  try {
+    const response = await axios.post('/api/verify-transaction', {
+      headers: {
+        accept: 'application/json',
+        authorization: `${import.meta.env.VITE_PAYMONGO_KEY2}`
+      },
+      body:{
+        uid : userID,
+        subs_id: subscriptionId
+      }
+    });
+    console.log('Verification response:', data);
+  } catch (error) {
+    console.error('Error verifying transaction:', error);
+  }
+}
 const fetchSubscriptionDetails = async (subscriptionId) => {
   try {
     const response = await axios.get(`https://api.paymongo.com/v1/subscriptions/${subscriptionId}`, {
@@ -81,15 +99,19 @@ const fetchSubscriptionDetails = async (subscriptionId) => {
 };
 
 
-const setData = async (email, subscriptionId, subscriptionDetails) => {
-  const subscriptionData = {
-    subs_id: subscriptionId,
-    plan: subscriptionDetails.attributes.plan.name,
-    next_billing_schedule: subscriptionDetails.attributes.next_billing_schedule,
-    status: subscriptionDetails.attributes.status
-  };
+const storeFirebase = async (userID, subscriptionDetails, data) => {
+  try {
+    const planSuffix = subscriptionDetails.attributes.plan?.name.includes("Pro") ? 'Pro' : 'Lite';
+    const path = `webhooks/${userID}_${planSuffix}_${subscriptionDetails.id}`;
 
-  const userID = (await auth.getUserByEmail(email)).uid;
-  await db.ref(`subscriptions/${userID}`).set(subscriptionData);
-  console.log('Successfully updated records on the database.');
+    await db.ref(path).set({
+      data:data,
+      created_at: Date.now(),
+    });
+
+    console.log(`Data stored successfully at path: ${path}`);
+  } catch (error) {
+    console.error('Error storing data in Firebase:', error);
+    throw error;
+  }
 };
