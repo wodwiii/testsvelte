@@ -11,20 +11,29 @@ export const getSubscription = async () => {
       const snapshot = await get(verifiedRef);
       if (snapshot.exists()) {
         const allVerified = snapshot.val();
-        const userSubscriptionKey = Object.keys(allVerified).find(key => key.startsWith(user.uid));
+        const userSubscriptionKeys = Object.keys(allVerified).filter(key => key.startsWith(user.uid));
         
-        if (userSubscriptionKey) {
-          const subscriptionData = allVerified[userSubscriptionKey];
-          const planType = userSubscriptionKey.split('_')[1];
-          
-          return {
-            subs_id: subscriptionData.data.id,
-            status: subscriptionData.status,
-            renewalDate: subscriptionData.data.attributes.next_billing_schedule,
-            subscriptionPlan: planType
-          };
+        if (userSubscriptionKeys.length > 0) {
+          for (const key of userSubscriptionKeys) {
+            const subscriptionData = allVerified[key];
+            if (subscriptionData.status !== "total_cancelled") {
+              const planType = key.split('_')[1];
+              return {
+                subs_id: subscriptionData.data.id,
+                status: subscriptionData.status,
+                renewalDate: subscriptionData.data.attributes.next_billing_schedule,
+                subscriptionPlan: planType
+              };
+            }
+          }
         }
+        return {
+          status: "active",
+          renewalDate: "FOREVER",
+          subscriptionPlan: "FREE"
+        };
       }
+      // Return default if no data exists
       return {
         status: "active",
         renewalDate: "FOREVER",

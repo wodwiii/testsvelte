@@ -54,20 +54,23 @@
 				<p>Expiration: <span class="font-bold underline">{subscriptionData?.renewalDate || "Loading..."}</span></p>
 			{/if}
 		</div>
+		{#if subscriptionData?.subscriptionPlan === "FREE"}
 		<div class="mt-4">
 			<button
+			
 				on:click={() => (showModal = true)}
 				class="bg-[#fe0000] text-white text-sm font-bold py-2 px-4 rounded-lg hover:bg-[#a60505] w-[130px]"
 			>
 				Upgrade Plan
 			</button>
 		</div>
+		{/if}
 		<div class="mt-4">
 			<button
 				on:click={() => (showManageModal = true)}
-				disabled={subscriptionData?.status.includes("cancelled") || subscriptionData?.subscriptionPlan === "FREE"}
+				disabled={subscriptionData?.status.includes("total_cancelled") || subscriptionData?.subscriptionPlan === "FREE"}
 				class="text-sm font-bold py-2 px-4 rounded-lg w-[130px]
-				{subscriptionData?.status.includes("cancelled") || subscriptionData?.subscriptionPlan === "FREE" ? 'bg-gray-400 text-gray-700 cursor-not-allowed' : 'bg-[#fe0000] text-white hover:bg-[#a60505]'}"
+				{subscriptionData?.status.includes("total_cancelled") || subscriptionData?.subscriptionPlan === "FREE" ? 'bg-gray-400 text-gray-700 cursor-not-allowed' : 'bg-[#fe0000] text-white hover:bg-[#a60505]'}"
 			>
 				Manage Plan
 			</button>

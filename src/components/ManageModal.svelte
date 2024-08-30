@@ -4,13 +4,14 @@
 
 	import Modal from './Modal.svelte';
 	import { subscription } from '../store/authStore';
-	import { get, ref, update } from 'firebase/database';
+	import { set, get, ref, update } from 'firebase/database';
 	import { database } from '$lib/firebase/firebase.client';
 	export let closeModal;
 	export let showManageModal;
 	export let uid;
+	let status;
+	$: status = $subscription?.status;
 	const handleCancelSub = async () => {
-		const subscriptionData = $subscription;
 		try {
 			const response = await cancelSubscription(uid);
 			console.log('Subscription cancelled:', response);
@@ -22,34 +23,110 @@
 			alert('An error occurred while cancelling the subscription.');
 		}
 	};
-
-	const cancelSubscription = async (uid) => {
-		const verifiedRef = ref(database, 'verified');
+	const handleResumeSub = async () => {
 		try {
-			const snapshot = await get(verifiedRef);
-			if (snapshot.exists()) {
-				const allVerified = snapshot.val();
-				const userSubscriptionKey = Object.keys(allVerified).find((key) => key.startsWith(uid));
-
-				if (userSubscriptionKey) {
-					const updates = {};
-					updates[`${userSubscriptionKey}/status`] = 'pending_cancelled';
-					await update(verifiedRef, updates);
-					return { success: true, message: 'Subscription cancelled successfully' };
-				} else {
-					throw new Error('Subscription not found');
-				}
-			} else {
-				throw new Error('No verified subscriptions found');
-			}
+			const response = await resumeSubscription(uid);
+			console.log('Subscription resumed:', response);
+			alert('Subscription resumed successfully!');
+			closeModal();
+			window.location.reload();
 		} catch (error) {
-			console.error('Error cancelling subscription:', error);
-			throw error;
+			console.error('Error:', error);
+			alert('An error occurred while resuming the subscription.');
 		}
 	};
+  const resumeSubscription = async (uid) => {
+    const verifiedRef = ref(database, 'verified');
+    const pendingCancellationRef = ref(database, 'pending_cancellation');
+
+    try {
+        const verifiedSnapshot = await get(verifiedRef);
+        if (verifiedSnapshot.exists()) {
+            const allVerified = verifiedSnapshot.val();
+            const userSubscriptionKey = Object.keys(allVerified).find((key) => key.startsWith(uid));
+
+            if (userSubscriptionKey) {
+                const subscriptionData = allVerified[userSubscriptionKey];
+                const subsId = subscriptionData.data.id;
+
+                // Update the verified node
+                const verifiedUpdates = {};
+                verifiedUpdates[`${userSubscriptionKey}/status`] = 'active';
+                await update(verifiedRef, verifiedUpdates);
+
+                // Remove entry from pending_cancellation
+                const pendingCancellationSnapshot = await get(pendingCancellationRef);
+                if (pendingCancellationSnapshot.exists()) {
+                    const pendingCancellations = pendingCancellationSnapshot.val();
+                    if (pendingCancellations[subsId]) {
+                        delete pendingCancellations[subsId];
+                        await set(pendingCancellationRef, pendingCancellations);
+                    }
+                }
+
+                return { success: true, message: 'Subscription resumed successfully' };
+            } else {
+                throw new Error('Subscription not found');
+            }
+        } else {
+            throw new Error('No verified subscriptions found');
+        }
+    } catch (error) {
+        console.error('Error resuming subscription:', error);
+        throw error;
+    }
+};
+
+  const cancelSubscription = async (uid) => {
+    const verifiedRef = ref(database, 'verified');
+    const pendingCancellationRef = ref(database, 'pending_cancellation');
+    
+    try {
+        const snapshot = await get(verifiedRef);
+        if (snapshot.exists()) {
+            const allVerified = snapshot.val();
+            const userSubscriptionKey = Object.keys(allVerified).find((key) => key.startsWith(uid));
+
+            if (userSubscriptionKey) {
+                const subscriptionData = allVerified[userSubscriptionKey];
+                const nextBillingSchedule = subscriptionData.data.attributes.next_billing_schedule;
+                const subsId = subscriptionData.data.id;
+
+                // Convert next_billing_schedule to epoch
+                const nextBillingEpoch = new Date(nextBillingSchedule).getTime();
+
+                // Update the verified node
+                const verifiedUpdates = {};
+                verifiedUpdates[`${userSubscriptionKey}/status`] = 'pending_cancelled';
+                await update(verifiedRef, verifiedUpdates);
+
+                // Create new entry in pending_cancellation
+                const pendingCancellationEntry = `${nextBillingEpoch}_${uid}`;
+                
+                // Get the current pending_cancellation data
+                const pendingCancellationSnapshot = await get(pendingCancellationRef);
+                let pendingCancellations = pendingCancellationSnapshot.val() || {};
+                
+                pendingCancellations[subsId] = pendingCancellationEntry;
+
+                // Update pending_cancellation in Firebase
+                await update(pendingCancellationRef, pendingCancellations);
+
+                return { success: true, message: 'Subscription cancellation pending' };
+            } else {
+                throw new Error('Subscription not found');
+            }
+        } else {
+            throw new Error('No verified subscriptions found');
+        }
+    } catch (error) {
+        console.error('Error cancelling subscription:', error);
+        throw error;
+    }
+};
 
 	const handleChangePayment = async () => {
-		alert('Change payment method functionality is not implemented yet.');
+		alert('Upgrade plan functionality is not implemented yet.');
 		closeModal();
 		window.location.reload();
 	};
@@ -61,13 +138,22 @@
 			on:click={() => handleChangePayment()}
 			class="bg-[#fe0000] text-white py-2 px-4 rounded-lg hover:bg-[#a60505]"
 		>
-			Change Payment Method
+			Upgrade Plan
 		</button>
-		<button
-			on:click={() => handleCancelSub()}
-			class="bg-[#fe0000] text-white py-2 px-4 rounded-lg hover:bg-[#a60505]"
-		>
-			Cancel Subscription
-		</button>
+		{#if status === 'active'}
+			<button
+				on:click={() => handleCancelSub()}
+				class="bg-[#fe0000] text-white py-2 px-4 rounded-lg hover:bg-[#a60505]"
+			>
+				Cancel Subscription
+			</button>
+		{:else if status === 'pending_cancelled'}
+			<button
+				on:click={() => handleResumeSub()}
+				class="bg-[#fe0000] text-white py-2 px-4 rounded-lg hover:bg-[#a60505]"
+			>
+				Resume Subscription
+			</button>
+		{/if}
 	</div>
 </Modal>

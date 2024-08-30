@@ -67,17 +67,18 @@ const handleOtherFunc = async (data) =>{
 
 const verifyTransaction = async (userID, subscriptionId) =>{
   try {
-    const response = await axios.post('/api/verify-transaction', {
+    const response = await fetch('https://testsvelte-payments.vercel.app/api/verify-transactions', {
+      method: 'POST',
       headers: {
         accept: 'application/json',
-        authorization: `${import.meta.env.VITE_PAYMONGO_KEY2}`
+        'Content-Type': 'application/json'
       },
-      body:{
+      body: JSON.stringify({
         uid : userID,
         subs_id: subscriptionId
-      }
+      })
     });
-    console.log('Verification response:', data);
+    console.log('Verification response:', response.json());
   } catch (error) {
     console.error('Error verifying transaction:', error);
   }

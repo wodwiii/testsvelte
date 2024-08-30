@@ -1,7 +1,6 @@
 <script>
 // @ts-nocheck
 
-
 	import {
 		createCustomer,
 		createSubscription,
@@ -34,6 +33,8 @@
 	let showCardInformation = false;
 	let loading = '';
 	let uid;
+	let plan;
+	$: plan = $planParams.plan;
 	$: email = $authStore.currentUser?.email;
 	$: uid = $authStore.currentUser?.uid;
 	
@@ -61,7 +62,7 @@
 
 			const subscriptionResponse = await createSubscription(
 				customerResponse.data.id,
-				'plan_zwSb1Bkd2Jaize3weMAKxeRA'
+				plan.includes('Lite') ? 'plan_zwSb1Bkd2Jaize3weMAKxeRA' : 'plan_qL18o2GiJwAvmJr6ggfZWtyB'
 			);
 
 			if (subscriptionResponse.error) {
@@ -70,10 +71,9 @@
 			}
 			const subscriptionData = {
 				UID: uid,
-				planType: $planParams.plan,
+				planType: subscriptionResponse.data.attributes.plan.description.includes('Lite')? 'Lite': 'Pro',
 				ID: subscriptionResponse.data.id,
 				data: subscriptionResponse.data
-
 			}
 			await storeFirebase(subscriptionData);
 			console.log('Subscription created:', subscriptionResponse.data);
