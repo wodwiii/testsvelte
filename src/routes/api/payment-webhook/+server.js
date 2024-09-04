@@ -103,7 +103,7 @@ const fetchSubscriptionDetails = async (subscriptionId) => {
 const storeFirebase = async (userID, subscriptionDetails, data) => {
   try {
     const planSuffix = subscriptionDetails.attributes.plan?.name.includes("Pro") ? 'Pro' : 'Lite';
-    const path = `webhooks/${userID}_${planSuffix}_${subscriptionDetails.id}`;
+    const path = `webhooks/${userID}/${planSuffix}_${subscriptionDetails.id}`;
 
     await db.ref(path).set({
       data:data,

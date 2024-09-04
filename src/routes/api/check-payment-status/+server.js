@@ -10,10 +10,9 @@ export async function GET({ url }) {
 		method: 'GET',
 		headers: {
 			accept: 'application/json',
-			authorization: 'Basic c2tfdGVzdF9EMVRkRm1id0dqaTRFRzFQTHRmYngxUmg6'
+			authorization: `${import.meta.env.VITE_PAYMONGO_KEY2}`
 		}
 	});
-
 	const data = await response.json();
 	return json(data);
 }

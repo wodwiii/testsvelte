@@ -6,34 +6,29 @@ import { auth } from './firebase.client';
 export const getSubscription = async () => {
   const user = auth.currentUser;
   if (user) {
-    const verifiedRef = ref(database, 'verified');
+    const verifiedRef = ref(database, `verified/${user.uid}/`);
     try {
       const snapshot = await get(verifiedRef);
       if (snapshot.exists()) {
-        const allVerified = snapshot.val();
-        const userSubscriptionKeys = Object.keys(allVerified).filter(key => key.startsWith(user.uid));
-        
-        if (userSubscriptionKeys.length > 0) {
-          for (const key of userSubscriptionKeys) {
-            const subscriptionData = allVerified[key];
-            if (subscriptionData.status !== "total_cancelled") {
-              const planType = key.split('_')[1];
-              return {
-                subs_id: subscriptionData.data.id,
-                status: subscriptionData.status,
-                renewalDate: subscriptionData.data.attributes.next_billing_schedule,
-                subscriptionPlan: planType
-              };
-            }
+        let latestSubscription = null;
+        let latestTimestamp = 0;
+        snapshot.forEach(childSnapshot => {
+          const data = childSnapshot.val();
+          const timestamp = data.created_at;
+          if (timestamp > latestTimestamp) {
+            latestTimestamp = timestamp;
+            latestSubscription = data;
           }
+        });
+        if (latestSubscription.data.status !== "total_cancelled") {
+          return {
+            subs_id: latestSubscription.data.id,
+            status: latestSubscription.status,
+            renewalDate: latestSubscription.data.attributes.next_billing_schedule,
+            subscriptionPlan: latestSubscription.data.attributes.plan.description.includes('Lite') ? 'LITE' : 'PRO'
+          };
         }
-        return {
-          status: "active",
-          renewalDate: "FOREVER",
-          subscriptionPlan: "FREE"
-        };
       }
-      // Return default if no data exists
       return {
         status: "active",
         renewalDate: "FOREVER",
@@ -53,11 +48,11 @@ export const storeFirebase = async (jsonResponse) => {
   try {
     const { UID, planType, ID, data } = jsonResponse;
     const planSuffix = planType === 'Pro' ? 'Pro' : 'Lite';
-    const path = `${UID}_${planSuffix}_${ID}`;
-    const dbRef = ref(database,'subs/'+ path);
+    const path = `${planSuffix}_${ID}`;
+    const dbRef = ref(database, `subs/${UID}/` + path);
 
     await set(dbRef, {
-      data:data,
+      data: data,
       created_at: Date.now(),
     });
 

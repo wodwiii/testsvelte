@@ -31,7 +31,7 @@ export async function POST({ request }) {
 const storeFirebase = async (userID, subscriptionDetails) => {
     try {
       const planSuffix = subscriptionDetails.attributes.plan?.name.includes("Pro") ? 'Pro' : 'Lite';
-      const path = `verified/${userID}_${planSuffix}_${subscriptionDetails.id}`;
+      const path = `verified/${userID}/${planSuffix}_${subscriptionDetails.id}`;
       const snapshot = await db.ref(path).once('value');
       //just check snapshot if already existing so we dont rewrite
       if(snapshot.exists()){

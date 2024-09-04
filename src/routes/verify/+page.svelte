@@ -7,6 +7,7 @@
 	import { database } from '../../lib/firebase/firebase.client';
 
 	let status = '';
+	let subStatus = ''
 	let userID = '';
 	let unsubscribe;
 
@@ -31,12 +32,12 @@
 				window.location.href = '/dashboard';
 				return;
 			}
-			while (status !== 'succeeded' && status !== 'failed') {
+			while (status !== 'succeeded' && subStatus !== 'failed') {
 				await new Promise((resolve) => setTimeout(resolve, 2000));
 				const data = await checkPaymentStatus(subscriptionID);
 				status = data.data.attributes.latest_invoice.payment_intent.status;
-
-				if (status === 'succeeded') {
+				subStatus = data.data.attributes.status;
+				if (status === 'succeeded' && subStatus === 'active') {
 					alert('Payment Successful!');
 					await verifyTransaction(userID, subscriptionID);
 					window.location.href = '/dashboard';
@@ -55,22 +56,21 @@
 
 	const getSubscriptionForUser = async (userID) => {
 		try {
-			const path = `subs`;
+			const path = `subs/${userID}`;
 			const dbRef = ref(database, path);
 			const snapshot = await get(dbRef);
-			console.log(`Logging data for ${userID}`);
 			if (snapshot.exists()) {
-				const allSubscriptions = snapshot.val();
-				const userSubscriptionKey = Object.keys(allSubscriptions).find(key => key.startsWith(userID));
-				if (userSubscriptionKey) {
-					const [_, __, ___, subscriptionIdPart] = userSubscriptionKey.split('_');
-                    const subscriptionId = `subs_${subscriptionIdPart}`;
-					console.log(`Found subscription ID: ${subscriptionId} for user: ${userID}`);
-					return subscriptionId;
-				} else {
-					console.log('No subscriptions found for user:', userID);
-					return null;
-				}
+				let latestSubscription = null;
+            	let latestTimestamp = 0;
+				snapshot.forEach(childSnapshot => {
+                const data = childSnapshot.val();
+                const timestamp = data.created_at;
+					if (timestamp > latestTimestamp) {
+						latestTimestamp = timestamp;
+						latestSubscription = data;
+					}
+				});
+				return latestSubscription.data.id;
 			} else {
 				console.log('No data found for the specified path.');
 				return null;
@@ -107,6 +107,7 @@
 	};
 
 	const checkPaymentStatus = async (subscriptionID) => {
+		console.log('Checking payment status...')
 		const url = new URL('/api/check-payment-status', window.location.origin);
 		url.searchParams.append('id', subscriptionID);
 
