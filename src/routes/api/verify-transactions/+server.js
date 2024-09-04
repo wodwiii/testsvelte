@@ -4,7 +4,7 @@ import { db, auth } from '$lib/firebase/firebaseAdmin.js';
 
 export async function POST({ request }) {
     try {
-      const { uid , subs_id } = await request.json();
+      const { uid , paymentIntenID } = await request.json();
       const options = {
         method: 'GET',
         headers: {
@@ -13,13 +13,13 @@ export async function POST({ request }) {
         }
       };
 
-      const response = await fetch(`https://api.paymongo.com/v1/subscriptions/${subs_id}`, options);
-      const subscriptionDetails = await response.json();
-      if(subscriptionDetails.data.attributes.latest_invoice.payment_intent.status !== 'succeeded'){
+      const response = await fetch(`https://api.paymongo.com/v1/payment_intents/${paymentIntenID}`, options);
+      const paymentDetails = await response.json();
+      if(paymentDetails.data.attributes.status !== 'succeeded'){
         console.error('Transaction not valid');
         return json({ message: 'Transaction not valid' }, { status: 500 });
       }
-      await storeFirebase(uid, subscriptionDetails.data);
+      await storeFirebase(uid, paymentDetails.data);
       return json({ message: 'Transaction successfully verified' }, { status: 200 });
     } catch (error) {
       console.error('Failed to verify the transaction:', error);
@@ -28,10 +28,10 @@ export async function POST({ request }) {
   }
 
 
-const storeFirebase = async (userID, subscriptionDetails) => {
+const storeFirebase = async (userID, paymentDetails) => {
     try {
-      const planSuffix = subscriptionDetails.attributes.plan?.name.includes("Pro") ? 'Pro' : 'Lite';
-      const path = `verified/${userID}/${planSuffix}_${subscriptionDetails.id}`;
+      const planSuffix = paymentDetails.attributes.plan?.name.includes("Pro") ? 'Pro' : 'Lite';
+      const path = `verified/${userID}/${planSuffix}_${paymentDetails.id}`;
       const snapshot = await db.ref(path).once('value');
       //just check snapshot if already existing so we dont rewrite
       if(snapshot.exists()){
@@ -39,7 +39,7 @@ const storeFirebase = async (userID, subscriptionDetails) => {
         return;
       }
       await db.ref(path).set({
-        data: subscriptionDetails,
+        data: paymentDetails,
         created_at: Date.now(),
         status: "active",
       });

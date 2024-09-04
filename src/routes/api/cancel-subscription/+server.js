@@ -4,7 +4,7 @@ import { json } from '@sveltejs/kit';
 
 export async function POST({ request }) {
   try {
-    const { subscriptionId, uid } = await request.json();
+    const { subscriptionId } = await request.json();
     if (!subscriptionId) {
       return json({ error: 'Subscription ID is required' }, { status: 400 });
     }
@@ -27,7 +27,6 @@ export async function POST({ request }) {
       return json({ error: 'Failed to cancel subscription', details: errorData }, { status: response.status });
     }
     const data = await response.json();
-    await setData(data.data, uid)
     return json({ message: 'Subscription cancelled successfully', data }, { status: 200 });
   } catch (error) {
     console.error('Error handling cancellation request:', error);
@@ -36,17 +35,3 @@ export async function POST({ request }) {
 }
 
 
-const setData = async(data, uid)=>{
-  if (!data || !data.attributes) {
-    console.error('Invalid data structure:', data);
-    return;
-  }
-  const subscriptionData = {
-    subs_id: data.id,
-    plan: data.attributes.plan.description,
-    next_billing_schedule: data.attributes.next_billing_schedule ,
-    status: data.attributes.status
-  };
-  await db.ref(`subscriptions/${uid}`).set(subscriptionData);
-  console.error('Successfully updated records on the database.');
-}

@@ -6,7 +6,7 @@ export async function GET({ url }) {
     if(!subscriptionId){
         return json({ error: 'No payment intend id' }, { status: 400 });
     }
-	const response = await fetch(`https://api.paymongo.com/v1/subscriptions/${subscriptionId}`, {
+	const response = await fetch(`https://api.paymongo.com/v1/payment_intents/${subscriptionId}`, {
 		method: 'GET',
 		headers: {
 			accept: 'application/json',

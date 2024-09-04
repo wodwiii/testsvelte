@@ -12,23 +12,39 @@ export const getSubscription = async () => {
       if (snapshot.exists()) {
         let latestSubscription = null;
         let latestTimestamp = 0;
+        let latestKey = '';
         snapshot.forEach(childSnapshot => {
           const data = childSnapshot.val();
           const timestamp = data.created_at;
           if (timestamp > latestTimestamp) {
             latestTimestamp = timestamp;
             latestSubscription = data;
+            latestKey = childSnapshot.key;
           }
         });
+        const recurring = latestKey.includes('_subs_') ? true : false;
         console.log(latestSubscription);
         if (latestSubscription.status !== "total_cancelled") {
+          const renewalDate = latestSubscription.data.attributes.updated_at
+          ? new Date(new Date(latestSubscription.data.attributes.updated_at * 1000).setMonth(new Date(latestSubscription.data.attributes.updated_at * 1000).getMonth() + 1))
+                .toISOString()
+                .split('T')[0]
+          : '';
+          return {
+            subs_id: latestSubscription.data.id,
+            status: latestSubscription.status,
+            renewalDate: renewalDate,
+            subscriptionPlan: recurring? latestSubscription.data.attributes.plan.description.includes('Lite') ? 'LITE' : 'PRO' : latestSubscription.data.attributes.description.includes('Lite') ? 'LITE' : 'PRO'
+          };
+        }
+        else if (latestSubscription.status === "total_cancelled" && new Date(latestSubscription.data.attributes.updated_at).getMonth+1 > new Date()) {
           return {
             subs_id: latestSubscription.data.id,
             status: latestSubscription.status,
             renewalDate: latestSubscription.data.attributes.next_billing_schedule,
             subscriptionPlan: latestSubscription.data.attributes.plan.description.includes('Lite') ? 'LITE' : 'PRO'
           };
-        }
+        }      
       }
       return {
         status: "active",

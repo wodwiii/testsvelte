@@ -43,9 +43,9 @@ export const attachPaymentMethod = async (paymentIntentId, paymentMethodId) => {
     }
 };
 
-export const createCheckoutSession = async (plan) => {
+export const createCheckoutSession = async (plan,uid) => {
     try {
-        const response = await post('/api/create-checkout-session', { plan });
+        const response = await post('/api/create-checkout-session', { plan, uid });
         return response;
     } catch (error) {
         console.error('Error creating checkout session:', error);
@@ -53,9 +53,9 @@ export const createCheckoutSession = async (plan) => {
     }
 };
 
-export const cancelSubscription = async (subscriptionId, uid) => {
+export const cancelSubscription = async (subscriptionId) => {
     try {
-        const response = await post('/api/cancel-subscription', { subscriptionId,uid });
+        const response = await post('/api/cancel-subscription', { subscriptionId });
         return response;
     } catch (error) {
         console.error('Error cancelling subscription:', error);
