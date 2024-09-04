@@ -4,13 +4,16 @@
     import { createCheckoutSession } from '$lib/api-call';
 	import Modal from './Modal.svelte';
     import { planParams } from '../store/paymentStore';
+    import { authStore } from '../store/authStore';
     export let showModal = false;
     export let closeModal;
     export let onUpgrade;
 
     let autoSubscribe = false;
     let loading = '';
-
+    let uid;
+    $: uid = $authStore.currentUser?.uid;
+    
     const handleUpgrade = async (plan) => {
         try {
             loading = plan;
@@ -22,7 +25,7 @@
             console.log(`Upgrading to ${plan} plan with ${paymentType} payment`);
 
             if (!autoSubscribe) {
-                const response = await createCheckoutSession(plan);
+                const response = await createCheckoutSession(plan, uid);
                 if (response.checkout_url) {
                     window.location.href = response.checkout_url;
                 }

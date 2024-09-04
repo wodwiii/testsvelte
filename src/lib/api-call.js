@@ -43,9 +43,9 @@ export const attachPaymentMethod = async (paymentIntentId, paymentMethodId) => {
     }
 };
 
-export const createCheckoutSession = async (plan) => {
+export const createCheckoutSession = async (plan , uid) => {
     try {
-        const response = await post('/api/create-checkout-session', { plan });
+        const response = await post('/api/create-checkout-session', { plan , uid });
         return response;
     } catch (error) {
         console.error('Error creating checkout session:', error);

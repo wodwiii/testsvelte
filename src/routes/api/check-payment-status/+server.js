@@ -2,11 +2,12 @@
 import { json } from '@sveltejs/kit';
 
 export async function GET({ url }) {
-	const subscriptionId = url.searchParams.get('id');
-    if(!subscriptionId){
+	const id = url.searchParams.get('id');
+    if(!id){
         return json({ error: 'No payment intend id' }, { status: 400 });
     }
-	const response = await fetch(`https://api.paymongo.com/v1/subscriptions/${subscriptionId}`, {
+	const queryType = id.includes("subs_")? "subscriptions" : "payment_intents";
+	const response = await fetch(`https://api.paymongo.com/v1/${queryType}/${id}`, {
 		method: 'GET',
 		headers: {
 			accept: 'application/json',

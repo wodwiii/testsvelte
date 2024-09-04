@@ -21,51 +21,66 @@ export async function POST({ request }) {
 }
 
 
-const handleOtherFunc = async (data) =>{
+const handleOtherFunc = async (data) => {
   try {
     const paymentData = data.attributes.data?.attributes;
     const paymentDescription = paymentData?.description;
-    if(!paymentDescription){
+    if (!paymentDescription) {
       console.error('No description available for this payment.');
       return;
     }
     console.log('Payment successful:');
     console.log(`Description: ${paymentDescription}`);
-
-
     const email = paymentData.billing?.email;
-    if(!email){
+    if (!email) {
       console.error('No email found for the payor.');
       return;
     }
     console.log(`Payor email: ${email}`);
 
-    const match = paymentDescription.match(/subs_\w+/);
-    const subscriptionId = match ? match[0] : null;
+    if (paymentData.description.includes('subs_')) {
+      const match = paymentDescription.match(/subs_\w+/);
+      const subscriptionId = match ? match[0] : null;
 
-    if(!subscriptionId){
-      console.error('Subscription ID not found in description');
-      return;
+      if (!subscriptionId) {
+        console.error('Subscription ID not found in description');
+        return;
+      }
+
+      console.log(`Fetching subscription details for ${subscriptionId}`);
+      const subscriptionDetails = await fetchDetails(subscriptionId);
+
+      if (!subscriptionDetails) {
+        console.error('Subscription details not found.');
+        return;
+      }
+
+      console.log('Updating records on the database.');
+      const userID = (await auth.getUserByEmail(email)).uid;
+      await storeFirebase(userID, subscriptionDetails, data)
+      await verifyTransaction(userID, subscriptionId);
     }
-    
-    console.log(`Fetching subscription details for ${subscriptionId}`);
-    const subscriptionDetails = await fetchSubscriptionDetails(subscriptionId);
 
-    if (!subscriptionDetails) {
-      console.error('Subscription details not found.');
-      return;
+    else{
+      const paymentIntentID = paymentData.billing?.payment_intent_id;
+      const paymentDetails = fetchDetails(paymentIntentID);
+      if (!paymentDetails) {
+        console.error('Payment details not found.');
+        return;
+      }
+      console.log('Updating records on the database.');
+      const userID = (await auth.getUserByEmail(email)).uid;
+      await storeFirebase(userID, paymentDetails, data)
+      await verifyTransaction(userID, paymentDetails.id);
     }
+      
 
-    console.log('Updating records on the database.');
-    const userID = (await auth.getUserByEmail(email)).uid;
-    await storeFirebase(userID, subscriptionDetails, data )
-    await verifyTransaction(userID, subscriptionId);
   } catch (error) {
-    
+
   }
 }
 
-const verifyTransaction = async (userID, subscriptionId) =>{
+const verifyTransaction = async (userID, subscriptionId) => {
   try {
     const response = await fetch('https://testsvelte-payments.vercel.app/api/verify-transactions', {
       method: 'POST',
@@ -74,7 +89,7 @@ const verifyTransaction = async (userID, subscriptionId) =>{
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        uid : userID,
+        uid: userID,
         subs_id: subscriptionId
       })
     });
@@ -83,9 +98,10 @@ const verifyTransaction = async (userID, subscriptionId) =>{
     console.error('Error verifying transaction:', error);
   }
 }
-const fetchSubscriptionDetails = async (subscriptionId) => {
+const fetchDetails = async (id) => {
+  const queryType = id.includes('subs_')? 'subscriptions' : 'payment_intents';
   try {
-    const response = await axios.get(`https://api.paymongo.com/v1/subscriptions/${subscriptionId}`, {
+    const response = await axios.get(`https://api.paymongo.com/v1/${queryType}/${id}`, {
       headers: {
         accept: 'application/json',
         authorization: `${import.meta.env.VITE_PAYMONGO_KEY2}`
@@ -100,13 +116,21 @@ const fetchSubscriptionDetails = async (subscriptionId) => {
 };
 
 
-const storeFirebase = async (userID, subscriptionDetails, data) => {
+const storeFirebase = async (userID, details, data) => {
+  const recurring = details.id.includes('subs_')? true: false;
+  let path;
   try {
-    const planSuffix = subscriptionDetails.attributes.plan?.name.includes("Pro") ? 'Pro' : 'Lite';
-    const path = `webhooks/${userID}/${planSuffix}_${subscriptionDetails.id}`;
-
+    if(recurring){
+      const planSuffix = details.attributes.plan?.name.includes("Pro") ? 'Pro' : 'Lite';
+      path = `webhooks/${userID}/${planSuffix}_${details.id}`;
+    }
+    else{
+      const planSuffix = details.attributes.description.includes("Pro") ? 'Pro' : 'Lite';
+      path = `webhooks/${userID}/${planSuffix}_${details.id}`;
+    }
+    
     await db.ref(path).set({
-      data:data,
+      data: data,
       created_at: Date.now(),
     });
 
