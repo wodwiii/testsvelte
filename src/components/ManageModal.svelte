@@ -2,6 +2,8 @@
 // @ts-nocheck
 
 
+
+
 	import Modal from './Modal.svelte';
 	import { subscription } from '../store/authStore';
 	import { set, get, ref, update } from 'firebase/database';
@@ -36,22 +38,32 @@
 		}
 	};
   const resumeSubscription = async (uid) => {
-    const verifiedRef = ref(database, 'verified');
+    const verifiedRef = ref(database, `verified/${uid}`);
     const pendingCancellationRef = ref(database, 'pending_cancellation');
 
     try {
         const verifiedSnapshot = await get(verifiedRef);
         if (verifiedSnapshot.exists()) {
-            const allVerified = verifiedSnapshot.val();
-            const userSubscriptionKey = Object.keys(allVerified).find((key) => key.startsWith(uid));
+            let latestSubscription = null;
+            let latestTimestamp = 0;
+            let latestKey = null;
+			verifiedSnapshot.forEach(childSnapshot => {
+                const data = childSnapshot.val();
+                const timestamp = data.created_at;
+					if (timestamp > latestTimestamp) {
+						latestTimestamp = timestamp;
+						latestSubscription = data;
+                        latestKey = childSnapshot.key;
+					}
+			});
 
-            if (userSubscriptionKey) {
-                const subscriptionData = allVerified[userSubscriptionKey];
+            if (latestSubscription) {
+                const subscriptionData = latestSubscription;
                 const subsId = subscriptionData.data.id;
 
                 // Update the verified node
                 const verifiedUpdates = {};
-                verifiedUpdates[`${userSubscriptionKey}/status`] = 'active';
+                verifiedUpdates[`${latestKey}/status`] = 'active';
                 await update(verifiedRef, verifiedUpdates);
 
                 // Remove entry from pending_cancellation
@@ -78,17 +90,29 @@
 };
 
   const cancelSubscription = async (uid) => {
-    const verifiedRef = ref(database, 'verified');
+    const verifiedRef = ref(database, `verified/${uid}`);
     const pendingCancellationRef = ref(database, 'pending_cancellation');
     
     try {
         const snapshot = await get(verifiedRef);
         if (snapshot.exists()) {
-            const allVerified = snapshot.val();
-            const userSubscriptionKey = Object.keys(allVerified).find((key) => key.startsWith(uid));
+            let latestSubscription = null;
+            let latestTimestamp = 0;
+            let latestKey = null;
+			snapshot.forEach(childSnapshot => {
+                const data = childSnapshot.val();
+                const timestamp = data.created_at;
+					if (timestamp > latestTimestamp) {
+						latestTimestamp = timestamp;
+						latestSubscription = data;
+                        latestKey = childSnapshot.key;
+					}
+			});
 
-            if (userSubscriptionKey) {
-                const subscriptionData = allVerified[userSubscriptionKey];
+
+            
+            if (latestSubscription) {
+                const subscriptionData = latestSubscription;
                 const nextBillingSchedule = subscriptionData.data.attributes.next_billing_schedule;
                 const subsId = subscriptionData.data.id;
 
@@ -97,7 +121,7 @@
 
                 // Update the verified node
                 const verifiedUpdates = {};
-                verifiedUpdates[`${userSubscriptionKey}/status`] = 'pending_cancelled';
+                verifiedUpdates[`${latestKey}/status`] = 'pending_cancelled';
                 await update(verifiedRef, verifiedUpdates);
 
                 // Create new entry in pending_cancellation

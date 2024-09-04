@@ -20,7 +20,8 @@ export const getSubscription = async () => {
             latestSubscription = data;
           }
         });
-        if (latestSubscription.data.status !== "total_cancelled") {
+        console.log(latestSubscription);
+        if (latestSubscription.status !== "total_cancelled") {
           return {
             subs_id: latestSubscription.data.id,
             status: latestSubscription.status,

@@ -25,34 +25,50 @@
 	});
 
 	async function verifyPayment() {
-		try {
-			const subscriptionID = await getSubscriptionForUser(userID);
-			if (!subscriptionID) {
-				alert('No subscription found.');
-				window.location.href = '/dashboard';
-				return;
-			}
-			while (status !== 'succeeded' && subStatus !== 'failed') {
-				await new Promise((resolve) => setTimeout(resolve, 2000));
-				const data = await checkPaymentStatus(subscriptionID);
-				status = data.data.attributes.latest_invoice.payment_intent.status;
-				subStatus = data.data.attributes.status;
-				if (status === 'succeeded' && subStatus === 'active') {
-					alert('Payment Successful!');
-					await verifyTransaction(userID, subscriptionID);
-					window.location.href = '/dashboard';
-					break;
-				} else if (status === 'failed') {
-					alert('Payment Failed. Please try again.');
-					window.location.href = '/dashboard';
-					break;
-				}
-			}
-		} catch (error) {
-			console.error('Error checking payment status:', error);
-			alert('An error occurred while verifying the payment. Please try again.');
-		}
-	}
+    try {
+        const subscriptionID = await getSubscriptionForUser(userID);
+        if (!subscriptionID) {
+            alert('No subscription found.');
+            window.location.href = '/dashboard';
+            return;
+        }
+
+        const timeoutDuration = 10000; 
+        const startTime = Date.now();
+        let status = '';
+        let subStatus = '';
+
+        while (status !== 'succeeded' && subStatus !== 'failed') {
+            const elapsedTime = Date.now() - startTime;
+
+            if (elapsedTime > timeoutDuration) {
+                alert('Verification timed out. Please try again.');
+                window.location.href = '/dashboard';
+                break;
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            const data = await checkPaymentStatus(subscriptionID);
+            status = data.data.attributes.latest_invoice.payment_intent.status;
+			console.log(`status: ${status}`);
+            subStatus = data.data.attributes.status;
+
+            if (status === 'succeeded' && subStatus === 'active') {
+                alert('Payment Successful!');
+                await verifyTransaction(userID, subscriptionID);
+                window.location.href = '/dashboard';
+                break;
+            } else if (status === 'failed') {
+                alert('Payment Failed. Please try again.');
+                window.location.href = '/dashboard';
+                break;
+            }
+        }
+    } catch (error) {
+        console.error('Error checking payment status:', error);
+        alert('An error occurred while verifying the payment. Please try again.');
+    }
+}
 
 	const getSubscriptionForUser = async (userID) => {
 		try {
