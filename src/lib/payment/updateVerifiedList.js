@@ -1,20 +1,21 @@
-import { auth, db} from "../firebase/firebaseAdmin"
+import { auth, db } from "../firebase/firebaseAdmin"
 import { saveToFirebase } from "./storeToFirebase";
 import { transactionData } from "./transactionData";
 
 const is_dev = `${import.meta.env.VITE_IS_DEV}`;
 const UID_CHARS = 6;
-const all_plans = ['P1', 'P3', 'P6', 'P12', 'L1', 'L3', 'L6', 'L12']; 
+const all_plans = ['P1', 'P3', 'P6', 'P12', 'L1', 'L3', 'L6', 'L12'];
 
 export async function updateVerifiedList() {
     // Get all data from 3_verified
     const ref = db.ref(`/payment${is_dev}/3_verified`);
     const snapshot = await ref.once('value');
-    
+
     // Create a map to track the most recent transaction per UID
     let verifiedMap = new Map();
-    
-    // Iterate over all 3_verified transactions
+    // Initialize verifiedList
+    let verifiedList = [];
+
     snapshot.forEach(childSnapshot => {
         const reference_number = childSnapshot.val().data.attributes.reference_number;
         // Extract epochTime and UID from the reference_number
@@ -26,18 +27,19 @@ export async function updateVerifiedList() {
         if (!paid_at) return;
         // Only store the most recent transaction per UID
         if (!verifiedMap.has(cutUID) || epochTime > verifiedMap.get(cutUID).epochTime) {
-            verifiedMap.set(cutUID, { epochTime, reference_number, paid_at, upgradeFrom: childSnapshot.val().upgradeFrom? childSnapshot.val().upgradeFrom : null });
+            verifiedMap.set(cutUID, { epochTime, reference_number, paid_at, upgradeFrom: childSnapshot.val().upgradeFrom ? childSnapshot.val().upgradeFrom : null });
         }
+        return;
+
 
     });
-    // Initialize verifiedList
-    let verifiedList = [];
+
     // Validate and add the most recent transactions to verifiedList
     for (let [cutUID, { reference_number, paid_at, upgradeFrom }] of verifiedMap) {
         //use the paid_at value of the original transaction if this is an upgrade transaction
-        if(upgradeFrom){
-                console.log("🚀 ~ updateVerifiedList ~ verifiedMap ~ upgradeFrom:", upgradeFrom)
-                const previousTransactionRef = db.ref(`/payment${is_dev}/3_verified/${upgradeFrom}`);
+        if (upgradeFrom) {
+            console.log("🚀 ~ updateVerifiedList ~ verifiedMap ~ upgradeFrom:", upgradeFrom)
+            const previousTransactionRef = db.ref(`/payment${is_dev}/3_verified/${upgradeFrom}`);
             try {
                 const previousSnapshot = await previousTransactionRef.once('value');
                 if (previousSnapshot.exists()) {
@@ -107,8 +109,59 @@ export async function updateVerifiedList() {
     } catch (error) {
         console.error('Error retrieving whitelist:', error);
     }
+    //added: loop through the 6_invoice collection and add any verified recurring transactions to verifiedList
+    const ref2 = db.ref(`/payment${is_dev}/6_invoice`);
+    const snapshot2 = await ref2.once('value');
+    try {
+        snapshot2.forEach(childSnapshot => {
+            const reference_number = childSnapshot.key; // Get the reference number from the path
+            const invoices = Object.keys(childSnapshot.val()).reverse(); // Get all invoice keys and reverse
+
+            // Get the most recent invoice (first after reversing)
+            const mostRecentInvoiceKey = invoices[0];
+            const mostRecentInvoiceData = childSnapshot.child(mostRecentInvoiceKey).val();
+            const invoiceData = mostRecentInvoiceData.data.attributes;
+
+            // Extracting values for conditions
+            const invoiceStatus = invoiceData.status;
+            const subscriptionStatus = invoiceData.subscription.status;
+            const uid = reference_number.split('-').pop();
+            const planType = reference_number.split('-')[0].split('_')[1][0];
+            const cutUID = uid.substring(0, UID_CHARS);
+            //filter out any recurring transactions that are already in verifiedList so no duplicates
+
+            if(invoiceStatus === 'paid' && subscriptionStatus === 'active'){
+                verifiedList = verifiedList.filter(v => v !== cutUID && v !== '-' + cutUID);
+                if (planType === 'P') {
+                    verifiedList.push('^' + cutUID);
+                } else if (planType === 'L') {
+                    verifiedList.push('^-' + cutUID);
+                }
+            }
+            else if (invoiceStatus === 'paid' && subscriptionStatus === 'cancelled') {
+                verifiedList = verifiedList.filter(v => v !== cutUID && v !== '-' + cutUID);
+                // Cancelled subscription
+                verifiedList.push('*-' + cutUID);
+            }
+            // } else if (
+            //     (invoiceStatus === 'open' && subscriptionStatus === 'past_due') ||
+            //     (invoiceStatus === 'open' && subscriptionStatus === 'unpaid')
+            // ) {
+            //     // Unpaid subscription
+            //     verifiedList.push('unpaid-' + cutUID);
+            // } else if (
+            //     (invoiceStatus === 'open' && subscriptionStatus === 'incomplete') ||
+            //     (invoiceStatus === 'void' && subscriptionStatus === 'incomplete_cancelled')
+            // ) {
+            //     // Unactivated subscription
+            //     verifiedList.push('unactivated-' + cutUID);
+            // }
+        })
+    } catch (error) {
+        console.error('Error looping through recurring data:', error);
+    }
     await saveToFirebase("gist", verifiedList);
-    
+
     // // Update gist and backup if needed
     // const gisted = await gistVerifiedList(verifiedList);
     // let saved = false;
@@ -141,7 +194,7 @@ function validity_plan_code(paid_at, reference_number) {
     const transaction =
         transactionData(null, null, plan); // args uid, email, plan
     let valid_days;
-    try{
+    try {
         valid_days = transaction.daysValid; // 30 days
     } catch (error) {
         console.error('validity_plan_code valid_days Error:', error);

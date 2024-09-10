@@ -1,12 +1,12 @@
-// @ts-nocheck
-import { db } from '$lib/firebase/firebaseAdmin';
+import { verifySubscriptionUID } from '$lib/payment-recurring/subscribe';
+import { updateVerifiedList } from '$lib/payment/updateVerifiedList';
 import { json } from '@sveltejs/kit';
 
 export async function POST({ request }) {
   try {
-    const { subscriptionId, uid } = await request.json();
-    if (!subscriptionId) {
-      return json({ error: 'Subscription ID is required' }, { status: 400 });
+    const { subscription_id, uid } = await request.json();
+    if(!subscription_id || !uid) {
+      return json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     const options = {
@@ -19,7 +19,7 @@ export async function POST({ request }) {
       body: JSON.stringify({data: {attributes: {cancellation_reason: 'unused'}}})
     };
 
-    const response = await fetch(`https://api.paymongo.com/v1/subscriptions/${subscriptionId}/cancel`, options);
+    const response = await fetch(`https://api.paymongo.com/v1/subscriptions/${subscription_id}/cancel`, options);
     console.log(response);
     if (!response.ok) {
       const errorData = await response.json();
@@ -27,7 +27,8 @@ export async function POST({ request }) {
       return json({ error: 'Failed to cancel subscription', details: errorData }, { status: response.status });
     }
     const data = await response.json();
-    await setData(data.data, uid)
+    await verifySubscriptionUID(uid);
+    await updateVerifiedList();
     return json({ message: 'Subscription cancelled successfully', data }, { status: 200 });
   } catch (error) {
     console.error('Error handling cancellation request:', error);
@@ -36,17 +37,4 @@ export async function POST({ request }) {
 }
 
 
-const setData = async(data, uid)=>{
-  if (!data || !data.attributes) {
-    console.error('Invalid data structure:', data);
-    return;
-  }
-  const subscriptionData = {
-    subs_id: data.id,
-    plan: data.attributes.plan.description,
-    next_billing_schedule: data.attributes.next_billing_schedule ,
-    status: data.attributes.status
-  };
-  await db.ref(`subscriptions/${uid}`).set(subscriptionData);
-  console.error('Successfully updated records on the database.');
-}
+

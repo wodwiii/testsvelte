@@ -1,4 +1,4 @@
-import { createCheckout, recentCheckoutUID, verifyCheckoutUID } from '$lib/payment/checkout';
+import { createCheckout, recentCheckoutUID } from '$lib/payment/checkout';
 import { saveToFirebase } from '$lib/payment/storeToFirebase';
 import { json } from '@sveltejs/kit';
 import { auth } from 'firebase-admin';
@@ -28,7 +28,8 @@ export async function GET({ url }) {
             return json({ error: 'Invalid UID' }, { status: 400 });
         }
 
-        // Manually verify if the user has an unpaid checkout session
+        // added 09/09/2024: check if uid has pending checkout. if so, return that checkout url
+        // check also if user is already verified, if verified, return verified: true
         try {
             const recentCheckoutSession = await recentCheckoutUID(uid);
             if(recentCheckoutSession?.checkout_url) {
@@ -41,7 +42,7 @@ export async function GET({ url }) {
             console.error('Error verifying UID:', error);
         }
 
-        // Create a new checkout session
+        // If user has no pending checkout session or not verified, ceate a new checkout session
         const checkoutResult = await createCheckout(uid, user, plan);
         checkoutResult.uid = uid;
 

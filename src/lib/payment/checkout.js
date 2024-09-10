@@ -103,31 +103,29 @@ export async function recentCheckoutUID(uid) {
         if(!payload.upgradeFrom) {
             const checkoutId = payload.data.id;
             const reference_number = payload.data.attributes.reference_number;
-            // Check if upgradeFrom exists before passing it
-            const upgradeFrom = payload.upgradeFrom ? payload.upgradeFrom : null;
+            //Check if checkout id is verified and valid,
             const recent = await getCheckoutId(checkoutId, reference_number);
+            //return the checkout url if checkout session is waiting for payment
             if (recent.checkout_url) {
                 return { checkout_url: recent.checkout_url };
             }
-            //check if user is on the verified list
+            //check if user is on the verified list, and if yes, return verified
             else if (recent.verifiedList) {
                 const shortUid = uid.slice(0, 6);
                 const normalizedUid = recent.verifiedList.map(item => item.replace('-', ''));
                 if (normalizedUid.includes(shortUid)) {
                     return { verified: normalizedUid };
                 }
+                //if not on the list, return null to proceed to creating new checkout session
                 else {
                     return null;
                 }
             }
+            //if recent is null, return null proceed to creating new checkout session
             return null;
         }
     }
 }
-
-
-
-
 
 export async function verifyCheckoutId(checkoutId, reference_number, upgradeFrom) {
     // console.log('verifyCheckout ID:' + checkoutId);
@@ -141,8 +139,6 @@ export async function verifyCheckoutId(checkoutId, reference_number, upgradeFrom
             return true; // Return if verified
         }
     }
-
-
 
     const url = 'https://api.paymongo.com/v1/checkout_sessions/' + checkoutId;
     const options = {
@@ -196,11 +192,11 @@ export async function getCheckoutId(checkoutId, reference_number) {
         }
         else if (!paid_at && verifiedPayload.data.attributes.status === "expired") {
             console.log("Expired ID: " + verifiedPayload.data.id);
-            return null; // Return null so we can proceed to checkout
+            return null; // Not paid and checkout session is expired so return null so we can proceed to checkout
         }
         await saveToFirebase("verified", verifiedPayload);
         const verifiedList = await updateVerifiedList();
-        return { verifiedList };
+        return { verifiedList }; // return the verified list to check if user is on the list
     } catch (error) {
         console.error('Error:', error);
         throw error; // Re-throw the error for handling at the caller level
