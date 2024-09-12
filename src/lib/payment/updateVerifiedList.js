@@ -1,6 +1,7 @@
 import { auth, db } from "../firebase/firebaseAdmin"
 import { saveToFirebase } from "./storeToFirebase";
 import { transactionData } from "./transactionData";
+import {processRecurringInvoices} from '../payment-recurring/verifyRecurring';
 
 const is_dev = `${import.meta.env.VITE_IS_DEV}`;
 const UID_CHARS = 6;
@@ -17,6 +18,9 @@ export async function updateVerifiedList() {
     let verifiedList = [];
 
     snapshot.forEach(childSnapshot => {
+        //ignore refunded transactions
+        if(childSnapshot.val().refunded) return; 
+
         const reference_number = childSnapshot.val().data.attributes.reference_number;
         // Extract epochTime and UID from the reference_number
         const epochTime = childSnapshot.val().data.attributes.paid_at;
@@ -38,7 +42,6 @@ export async function updateVerifiedList() {
     for (let [cutUID, { reference_number, paid_at, upgradeFrom }] of verifiedMap) {
         //use the paid_at value of the original transaction if this is an upgrade transaction
         if (upgradeFrom) {
-            console.log("🚀 ~ updateVerifiedList ~ verifiedMap ~ upgradeFrom:", upgradeFrom)
             const previousTransactionRef = db.ref(`/payment${is_dev}/3_verified/${upgradeFrom}`);
             try {
                 const previousSnapshot = await previousTransactionRef.once('value');
@@ -109,57 +112,10 @@ export async function updateVerifiedList() {
     } catch (error) {
         console.error('Error retrieving whitelist:', error);
     }
-    //added: loop through the 6_invoice collection and add any verified recurring transactions to verifiedList
-    const ref2 = db.ref(`/payment${is_dev}/6_invoice`);
-    const snapshot2 = await ref2.once('value');
-    try {
-        snapshot2.forEach(childSnapshot => {
-            const reference_number = childSnapshot.key; // Get the reference number from the path
-            const invoices = Object.keys(childSnapshot.val()).reverse(); // Get all invoice keys and reverse
-
-            // Get the most recent invoice (first after reversing)
-            const mostRecentInvoiceKey = invoices[0];
-            const mostRecentInvoiceData = childSnapshot.child(mostRecentInvoiceKey).val();
-            const invoiceData = mostRecentInvoiceData.data.attributes;
-
-            // Extracting values for conditions
-            const invoiceStatus = invoiceData.status;
-            const subscriptionStatus = invoiceData.subscription.status;
-            const uid = reference_number.split('-').pop();
-            const planType = reference_number.split('-')[0].split('_')[1][0];
-            const cutUID = uid.substring(0, UID_CHARS);
-            //filter out any recurring transactions that are already in verifiedList so no duplicates
-
-            if(invoiceStatus === 'paid' && subscriptionStatus === 'active'){
-                verifiedList = verifiedList.filter(v => v !== cutUID && v !== '-' + cutUID);
-                if (planType === 'P') {
-                    verifiedList.push('^' + cutUID);
-                } else if (planType === 'L') {
-                    verifiedList.push('^-' + cutUID);
-                }
-            }
-            else if (invoiceStatus === 'paid' && subscriptionStatus === 'cancelled') {
-                verifiedList = verifiedList.filter(v => v !== cutUID && v !== '-' + cutUID);
-                // Cancelled subscription
-                verifiedList.push('*-' + cutUID);
-            }
-            // } else if (
-            //     (invoiceStatus === 'open' && subscriptionStatus === 'past_due') ||
-            //     (invoiceStatus === 'open' && subscriptionStatus === 'unpaid')
-            // ) {
-            //     // Unpaid subscription
-            //     verifiedList.push('unpaid-' + cutUID);
-            // } else if (
-            //     (invoiceStatus === 'open' && subscriptionStatus === 'incomplete') ||
-            //     (invoiceStatus === 'void' && subscriptionStatus === 'incomplete_cancelled')
-            // ) {
-            //     // Unactivated subscription
-            //     verifiedList.push('unactivated-' + cutUID);
-            // }
-        })
-    } catch (error) {
-        console.error('Error looping through recurring data:', error);
-    }
+    
+    // Added recurring transactions from 6_invoice to verifiedList
+    // this loops the 6_invoice collection and add any verified recurring transactions to verifiedList
+    verifiedList = await processRecurringInvoices(db, is_dev, verifiedList, UID_CHARS);
     await saveToFirebase("gist", verifiedList);
 
     // // Update gist and backup if needed
@@ -214,7 +170,6 @@ function validity_plan_code(paid_at, reference_number) {
 
     const diff = now - paid_date;
     const diff_days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    console.log("🚀 ~ validity_plan_code ~ diff_days:", diff_days)
     // console.log('diff_days:' + diff_days + ' | valid_days:' + valid_days)
     if (diff_days < valid_days) {
         console.log('VALID | Reference Number: ' + reference_number + ' | plan:' + plan);

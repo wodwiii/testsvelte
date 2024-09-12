@@ -10,7 +10,18 @@ export async function storeToFirebase(table, payload) {
         case 'subscription': {
             const epochTime = Math.floor(Date.now() / 1000);
             const uid = payload.uid;
-            const plan_code = payload.data.attributes.plan.id === import.meta.env.VITE_PAYMONGO_LITE_PLAN_ID ? 'L' : 'P';
+            const planReverseMapping = {
+                [import.meta.env.VITE_PAYMONGO_LITE_PLAN_ID]: 'LITE',
+                [import.meta.env.VITE_PAYMONGO_QLITE_PLAN_ID]: 'QLITE',
+                [import.meta.env.VITE_PAYMONGO_ALITE_PLAN_ID]: 'ALITE',
+                [import.meta.env.VITE_PAYMONGO_PRO_PLAN_ID]: 'PRO',
+                [import.meta.env.VITE_PAYMONGO_QPRO_PLAN_ID]: 'QPRO',
+                [import.meta.env.VITE_PAYMONGO_APRO_PLAN_ID]: 'APRO'
+            };
+            
+            // Example usage in your code
+            const plan_id = payload.data.attributes.plan.id;
+            const plan_code = planReverseMapping[plan_id] || '?';
             const reference_number = `${epochTime}_${plan_code}-${uid}`
             payload.reference_number = reference_number;
             const ref = db.ref(`/payment/4_subscription`);

@@ -2,8 +2,22 @@ import { db } from "$lib/firebase/firebaseAdmin";
 import { storeToFirebase } from "./storeToFirebase";
 
 export async function createSubscription(customer_id, plan_code) {
-    //plan_id is not dynamically created, it is fixed for our two plans and created via the paymongo api in the dashboard
-    const plan_id = plan_code === 'LITE' ? import.meta.env.VITE_PAYMONGO_LITE_PLAN_ID : import.meta.env.VITE_PAYMONGO_PRO_PLAN_ID;
+    // Added mapping of plan codes to Paymongo plan IDs
+    const planMapping = {
+        'LITE': import.meta.env.VITE_PAYMONGO_LITE_PLAN_ID,
+        'QLITE': import.meta.env.VITE_PAYMONGO_QLITE_PLAN_ID,
+        'ALITE': import.meta.env.VITE_PAYMONGO_ALITE_PLAN_ID,
+        'PRO': import.meta.env.VITE_PAYMONGO_PRO_PLAN_ID,
+        'QPRO': import.meta.env.VITE_PAYMONGO_QPRO_PLAN_ID,
+        'APRO': import.meta.env.VITE_PAYMONGO_APRO_PLAN_ID
+    };
+
+    const plan_id = planMapping[plan_code];
+
+    if (!plan_id) {
+        throw new Error(`Invalid plan_code: ${plan_code}`);
+    }
+
     const options = {
         method: 'POST',
         headers: {
@@ -20,10 +34,12 @@ export async function createSubscription(customer_id, plan_code) {
             }
         })
     };
+
     const response = await fetch('https://api.paymongo.com/v1/subscriptions', options);
     const data = await response.json();
     return data;
 }
+
 
 export async function checkCustomer(email) {
     const options = {
@@ -118,7 +134,7 @@ export async function verifySubscriptionUID(uid) {
     for (const payload of payloads) {
         const id = payload.data.id;
         const reference_number = payload.reference_number;
-        // Check if upgradeFrom exists before passing it
+        // Check if upgradeFrom exists before passing it tho not yet implemented on recurring
         const upgradeFrom = payload.upgradeFrom ? payload.upgradeFrom : null;
         await verifySubscriptionID(id, reference_number, upgradeFrom);
 
@@ -175,7 +191,7 @@ export async function verifySubscriptionID(subscription_id, reference_number, up
 
         //check and store the latest invoice of the subscription
         
-        // Store the payload in Firebase Realtime Database
+        // Store the invoice, once stored it will be there forever, can not be removed but can be updated
         await storeToFirebase("invoice", invoicePayload);
         return; // Return if verified
     } catch (error) {

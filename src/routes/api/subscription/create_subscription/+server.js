@@ -6,7 +6,7 @@ import { auth } from 'firebase-admin';
 
 export async function GET({ url }) {
     try {
-        const validPlanCodes = ['LITE', 'PRO'];
+        const validPlanCodes = ['LITE','QLITE', 'ALITE', 'PRO', 'QPRO', 'APRO'];
         const uid = url.searchParams.get('uid');
         const customer_id = url.searchParams.get('customer_id');
         const plan_code = url.searchParams.get('plan_code');

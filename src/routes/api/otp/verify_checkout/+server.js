@@ -19,7 +19,7 @@ export async function GET({ url }) {
         // Return the refId as JSON
         return json({ refId }, { status: 200 });
     } catch (error) {
-        const err = 'Error processing webhook: ' + error.message;
+        const err = 'Error verifying checkout uid: ' + error.message;
         console.error(err);
 
         // Return the error message with status 500

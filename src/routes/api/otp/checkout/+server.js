@@ -1,4 +1,4 @@
-import { createCheckout, recentCheckoutUID } from '$lib/payment/checkout';
+import { createCheckout, recentCheckoutUID, verifyCheckoutUID } from '$lib/payment/checkout';
 import { saveToFirebase } from '$lib/payment/storeToFirebase';
 import { json } from '@sveltejs/kit';
 import { auth } from 'firebase-admin';
@@ -30,10 +30,11 @@ export async function GET({ url }) {
 
         // added 09/09/2024: check if uid has pending checkout. if so, return that checkout url
         // check also if user is already verified, if verified, return verified: true
+        // added price update reference timestamp and get only same plan checkout
         try {
-            const recentCheckoutSession = await recentCheckoutUID(uid);
+            const recentCheckoutSession = await recentCheckoutUID(plan, uid);
             if(recentCheckoutSession?.checkout_url) {
-                return json({ url: recentCheckoutSession }, { status: 200 });
+                return json({ url: recentCheckoutSession.checkout_url }, { status: 200 });
             }
             else if(recentCheckoutSession?.verified){
                 return json({ verified: true }, { status: 200 });
@@ -41,6 +42,13 @@ export async function GET({ url }) {
         } catch (error) {
             console.error('Error verifying UID:', error);
         }
+        //this is the snippet in the current to trigger verify if uid has been paid if user left payment page
+        // try {
+        //     // manual trigger verify if uid has been paid if user left payment page
+        //     await verifyCheckoutUID(uid);
+        // } catch (e) {
+        //     console.error('Error verifying UID:', e);
+        // }
 
         // If user has no pending checkout session or not verified, ceate a new checkout session
         const checkoutResult = await createCheckout(uid, user, plan);
