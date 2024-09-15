@@ -3,7 +3,8 @@ import {  verifyCheckoutUID } from '$lib/payment/checkout';
 import { createCheckoutUpgrade } from '$lib/payment/checkoutUpgrade';
 import { saveToFirebase } from '$lib/payment/storeToFirebase';
 import { json } from '@sveltejs/kit';
-import { auth } from 'firebase-admin';
+import { auth } from '$lib/firebase/firebaseAdmin.js';
+import { getUserByUID } from '$lib/helper/getByUID';
 
 // Define allowed upgrade plans (Pro and Lite with different durations)
 const allowed_upgrade_plans = ['P1', 'P3', 'P12', 'L1', 'L3', 'L12'];
@@ -23,12 +24,9 @@ export async function GET({ url }) {
             return json({ error: 'Invalid or missing plan' }, { status: 400 });
         }
 
-        let user;
-        try {
-            user = await auth().getUser(uid);
-        } catch (error) {
-            console.error('Invalid UID:', error);
-            return json({ error: 'Invalid UID' }, { status: 400 });
+        const { user, error } = await getUserByUID(uid);
+        if (error) {
+            return json({ error }, { status: 400 });
         }
 
         // // Manually verify if the user has any existing unpaid or pending checkout session

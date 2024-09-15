@@ -1,4 +1,5 @@
-import { db } from "$lib/firebase/firebaseAdmin";
+import { auth, db } from "$lib/firebase/firebaseAdmin";
+import { getUserByUID } from "$lib/helper/getByUID";
 import { cancelAndRefundTransaction } from "$lib/payment/cancelAndRefund";
 import { json } from "@sveltejs/kit";
 
@@ -8,6 +9,10 @@ export async function POST({ request }) {
 
         if (!uid) {
             return json({ error: 'Missing uid' }, { status: 400 });
+        }
+        const { user, error } = await getUserByUID(uid);
+        if (error) {
+            return json({ error }, { status: 400 });
         }
         const cancelAndRefundResult = await cancelAndRefundTransaction(uid);
         cancelAndRefundResult.updated = new Date().toLocaleString('en-US', { timeZone: 'Asia/Singapore' });

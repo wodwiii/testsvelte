@@ -1,7 +1,8 @@
 import { createCheckout, recentCheckoutUID, verifyCheckoutUID } from '$lib/payment/checkout';
 import { saveToFirebase } from '$lib/payment/storeToFirebase';
 import { json } from '@sveltejs/kit';
-import { auth } from 'firebase-admin';
+import { auth } from '$lib/firebase/firebaseAdmin.js';
+import { getUserByUID } from '$lib/helper/getByUID';
 
 const allowed_checkout_plans = ['P1', 'P3', 'P12', 'L1', 'L3', 'L12'];
 
@@ -20,12 +21,9 @@ export async function GET({ url }) {
         }
 
         // Fetch user data from Firebase Auth using the UID
-        let user;
-        try {
-            user = await auth().getUser(uid);
-        } catch (error) {
-            console.error('Invalid UID:', error);
-            return json({ error: 'Invalid UID' }, { status: 400 });
+        const { user, error } = await getUserByUID(uid);
+        if (error) {
+            return json({ error }, { status: 400 });
         }
 
         // added 09/09/2024: check if uid has pending checkout. if so, return that checkout url

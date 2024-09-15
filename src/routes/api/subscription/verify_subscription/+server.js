@@ -1,12 +1,17 @@
 import { json } from '@sveltejs/kit';
 import { updateVerifiedList } from '$lib/payment/updateVerifiedList';
 import { verifySubscriptionUID } from '$lib/payment-recurring/subscribe';
+import { getUserByUID } from '$lib/helper/getByUID';
 
 export async function GET({ url }) {
     const uid = url.searchParams.get('uid');
 
     if (!uid) {
         return json({ error: 'Missing UID' }, { status: 400 });
+    }
+    const { user, error } = await getUserByUID(uid);
+    if (error) {
+        return json({ error }, { status: 400 });
     }
 
     try {

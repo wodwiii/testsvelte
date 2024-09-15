@@ -1,3 +1,4 @@
+import { getUserByUID } from '$lib/helper/getByUID';
 import { verifySubscriptionUID } from '$lib/payment-recurring/subscribe';
 import { updateVerifiedList } from '$lib/payment/updateVerifiedList';
 import { json } from '@sveltejs/kit';
@@ -8,7 +9,10 @@ export async function POST({ request }) {
     if(!subscription_id || !uid) {
       return json({ error: 'Missing required fields' }, { status: 400 });
     }
-
+    const { user, error } = await getUserByUID(uid);
+    if (error) {
+        return json({ error }, { status: 400 });
+    }
     const options = {
       method: 'POST',
       headers: {

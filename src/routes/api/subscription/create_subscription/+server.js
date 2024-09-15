@@ -1,3 +1,4 @@
+import { getUserByUID } from '$lib/helper/getByUID';
 import { storeToFirebase } from '$lib/payment-recurring/storeToFirebase';
 import { createSubscription } from '$lib/payment-recurring/subscribe';
 import { json } from '@sveltejs/kit';
@@ -14,17 +15,16 @@ export async function GET({ url }) {
         if(!uid || !customer_id || !plan_code) {
             return json({ error: 'Missing required parameters' }, { status: 400 });
         }
+        
         //check if valid plan code
         if (!validPlanCodes.includes(plan_code)) {
             return json({ error: 'Invalid plan code' }, { status: 400 });
         }
 
-        let user;
-        try {
-            user = await auth().getUser(uid);
-        } catch (error) {
-            console.error('Invalid UID:', error);
-            return json({ error: 'Invalid UID' }, { status: 400 });
+        const { user, error } = await getUserByUID(uid);
+
+        if (error) {
+            return json({ error }, { status: 400 });
         }
 
         const subscribeResult = await createSubscription(customer_id, plan_code);

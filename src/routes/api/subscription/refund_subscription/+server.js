@@ -1,4 +1,5 @@
 import { db } from '$lib/firebase/firebaseAdmin';
+import { getUserByUID } from '$lib/helper/getByUID';
 import { refundSubscription } from '$lib/payment-recurring/refundSubscription';
 import { updateVerifiedList } from '$lib/payment/updateVerifiedList';
 import { json } from '@sveltejs/kit';
@@ -8,6 +9,10 @@ export async function POST({ request }) {
     const { uid } = await request.json();
     if (!uid) {
       return json({ error: 'Missing uid' }, { status: 400 });
+    }
+    const { user, error } = await getUserByUID(uid);
+    if (error) {
+        return json({ error }, { status: 400 });
     }
     const refundResult = await refundSubscription(uid);
     refundResult.updated = new Date().toLocaleString('en-US', { timeZone: 'Asia/Singapore' });

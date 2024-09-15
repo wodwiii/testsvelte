@@ -1,12 +1,18 @@
 import { json } from '@sveltejs/kit';
 import { verifyCheckoutUID } from '$lib/payment/checkout';
 import { updateVerifiedList } from '$lib/payment/updateVerifiedList';
+import { auth } from '$lib/firebase/firebaseAdmin';
+import { getUserByUID } from '$lib/helper/getByUID';
 
 export async function GET({ url }) {
     const uid = url.searchParams.get('uid');
 
     if (!uid) {
         return json({ error: 'Missing UID' }, { status: 400 });
+    }
+    const { user, error } = await getUserByUID(uid);
+    if (error) {
+        return json({ error }, { status: 400 });
     }
 
     try {
