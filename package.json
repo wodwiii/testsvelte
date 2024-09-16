@@ -31,8 +31,13 @@
 	"dependencies": {
 		"@sveltejs/adapter-vercel": "^3.1.0",
 		"axios": "^1.7.5",
+		"bits-ui": "^0.21.13",
+		"clsx": "^2.1.1",
 		"firebase": "^10.13.0",
 		"firebase-admin": "^12.4.0",
-		"node-fetch": "^3.3.2"
+		"lucide-svelte": "^0.441.0",
+		"node-fetch": "^3.3.2",
+		"tailwind-merge": "^2.5.2",
+		"tailwind-variants": "^0.2.1"
 	}
 }

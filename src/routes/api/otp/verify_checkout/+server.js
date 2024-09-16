@@ -11,6 +11,10 @@ export async function GET({ url }) {
         return json({ error: 'Missing UID' }, { status: 400 });
     }
     const { user, error } = await getUserByUID(uid);
+    if(user){
+        console.log("🚀 ~ GET ~ user:", user)
+        
+    }
     if (error) {
         return json({ error }, { status: 400 });
     }
