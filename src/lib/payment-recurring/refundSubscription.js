@@ -12,7 +12,7 @@ export async function refundSubscription(uid) {
         // Find the most recent reference number
         snapshot.forEach(childSnapshot => {
             const reference_number = childSnapshot.key;
-            const uidFromPath = reference_number.split('-').pop();
+            const uidFromPath = reference_number.split('-')[1];
 
             // Check if the UID matches and update the most recent reference number
             if (uidFromPath === uid) {

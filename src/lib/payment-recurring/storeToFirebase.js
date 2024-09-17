@@ -22,7 +22,8 @@ export async function storeToFirebase(table, payload) {
             // store payload to 4_subscription and 5_subscription_uid
             const plan_id = payload.data.attributes.plan.id;
             const plan_code = planReverseMapping[plan_id] || '?';
-            const reference_number = `${epochTime}_${plan_code}-${uid}`
+            const subs_id = payload.data.id;
+            const reference_number = `${epochTime}_${plan_code}-${uid}-${subs_id}`;
             payload.reference_number = reference_number;
             const ref = db.ref(`/payment/4_subscription`);
             const snapshot = await ref.child(reference_number).once('value');

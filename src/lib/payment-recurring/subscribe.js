@@ -40,7 +40,6 @@ export async function createSubscription(customer_id, plan_code) {
     return data;
 }
 
-
 export async function checkCustomer(email) {
     const options = {
         method: 'GET',

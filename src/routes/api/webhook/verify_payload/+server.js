@@ -1,4 +1,5 @@
 import { db } from '$lib/firebase/firebaseAdmin';
+import { verifySubscriptionID } from '$lib/payment-recurring/subscribe.js';
 import { verifyCheckoutId } from '$lib/payment/checkout.js';
 import { json } from '@sveltejs/kit';
 
@@ -17,8 +18,9 @@ export async function POST({request}){
             const upgradeFrom = payload.upgradeFrom ? payload.upgradeFrom : null;
             console.log('upgradeFrom:' + upgradeFrom);
             await verifyCheckoutId(checkoutId, reference_number, upgradeFrom);
-        }
-        else if(transaction_type === 'subscription.invoice.paid'){
+        } 
+        else if(transaction_type === 'payment.paid'){
+            await verifySubscriptionID(checkoutId, reference_number);
         }
         console.log('Verified payload successfully');
         return json({ message: 'Verified payload successfully' }, { status: 200 });

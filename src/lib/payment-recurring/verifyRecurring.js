@@ -25,8 +25,8 @@ export async function processRecurringInvoices(db, is_dev, verifiedList, UID_CHA
             // Extracting values for conditions
             const invoiceStatus = invoiceData.status;
             const subscriptionStatus = invoiceData.subscription.status;
-            const uid = reference_number.split('-').pop();
-            const plan_code = reference_number.split('-')[0].split('_')[1];
+            const uid = reference_number.split('-')[1];
+            const plan_code = reference_number.split('_')[1].split('-')[0];
             const cutUID = uid.substring(0, UID_CHARS);
             // Map plan codes to their respective types
             const planTypeMapping = {

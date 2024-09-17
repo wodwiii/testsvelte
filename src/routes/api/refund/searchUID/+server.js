@@ -65,7 +65,7 @@ async function searchUID(uid) {
         // Loop through all transactions in 6_invoice and get the most recent one
         snapshot2.forEach(childSnapshot => {
             const reference_number = childSnapshot.key;
-            const uidFromPath = reference_number.split('-').pop();
+            const uidFromPath = reference_number.split('-')[1];
             if(childSnapshot.val().refunded) return;
             // Check if the UID matches and update the most recent reference number
             if (uidFromPath === uid) {
