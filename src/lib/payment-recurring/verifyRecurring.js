@@ -8,7 +8,6 @@ export async function processRecurringInvoices(db, is_dev, verifiedList, UID_CHA
 
             // Check if refunded
             if (childSnapshot.val().refunded) {
-                console.log('REFUNDED Reference Number: ' + reference_number);
                 return; // Skip this entry if it is refunded
             }
             //just removing the refunded key from the object so it doesn't mess with the reversing 

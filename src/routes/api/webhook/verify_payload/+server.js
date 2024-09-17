@@ -13,7 +13,9 @@ export async function POST({request}){
             const uid = reference_number.split('-').pop();
             const ref = await db.ref(`2_checkout_uid`);
             const snapshot = await ref.child(uid).child(reference_number).once('value');
-            const upgradeFrom = snapshot.val()?.upgradeFrom || null;
+            const payload = snapshot.val();
+            const upgradeFrom = payload.upgradeFrom ? payload.upgradeFrom : null;
+            console.log('upgradeFrom:' + upgradeFrom);
             await verifyCheckoutId(checkoutId, reference_number, upgradeFrom);
         }
         else if(transaction_type === 'subscription.invoice.paid'){
