@@ -19,7 +19,7 @@ export async function storeToFirebase(table, payload) {
                 [import.meta.env.VITE_PAYMONGO_APRO_PLAN_ID]: 'APRO'
             };
             
-            // Example usage in your code
+            // store payload to 4_subscription and 5_subscription_uid
             const plan_id = payload.data.attributes.plan.id;
             const plan_code = planReverseMapping[plan_id] || '?';
             const reference_number = `${epochTime}_${plan_code}-${uid}`
