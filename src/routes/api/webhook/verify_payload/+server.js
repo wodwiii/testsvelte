@@ -4,15 +4,15 @@ import { json } from '@sveltejs/kit';
 
 export async function POST({request}){
     try {
-        const {reference_number, checkoutID, transaction_type} = await request.json();
-        console.log('Reference Number:' + reference_number + '| checkoutID:' + checkoutID + '| transaction_type:' + transaction_type);
+        const {reference_number, checkoutId, transaction_type} = await request.json();
+        console.log('Reference Number:' + reference_number + '| checkoutID:' + checkoutId + '| transaction_type:' + transaction_type);
         if(transaction_type === 'checkout_session.payment.paid'){
             //check first in the checkout_uid if this is an upgraded transaction
             const uid = reference_number.split('-').pop();
             const ref = await db.ref(`2_checkout_uid`);
             const snapshot = await ref.child(uid).child(reference_number).once('value');
             const upgradeFrom = snapshot.val()?.upgradeFrom || null;
-            await verifyCheckoutId(checkoutID, reference_number, upgradeFrom);
+            await verifyCheckoutId(checkoutId, reference_number, upgradeFrom);
         }
         else if(transaction_type === 'subscription.invoice.paid'){
         }
