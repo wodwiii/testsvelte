@@ -11,7 +11,7 @@ export async function POST({request}){
         if(transaction_type === 'checkout_session.payment.paid'){
             //check first in the checkout_uid if this is an upgraded transaction
             const uid = reference_number.split('-').pop();
-            const ref = await db.ref(`2_checkout_uid`);
+            const ref = await db.ref(`/payment/2_checkout_uid`);
             const snapshot = await ref.child(uid).child(reference_number).once('value');
             const payload = snapshot.val();
             const upgradeFrom = payload.upgradeFrom ? payload.upgradeFrom : null;
