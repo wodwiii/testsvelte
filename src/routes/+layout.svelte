@@ -8,7 +8,7 @@
 	import { browser } from '$app/environment';
 	/** @type {import('@sveltejs/adapter-vercel').Config} */
 	export const config = {
-		runtime: 'edge',
+		runtime: 'nodejs18.x',
 		maxDuration: 60
 	};
 	onMount(() => {

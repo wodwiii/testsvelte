@@ -4,7 +4,7 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 const config = {
 	kit: {
 		adapter: adapter({
-			runtime: 'edge',
+			runtime: 'nodejs18.x',
 		}),
 		alias: {
 			"@/*": "./path/to/lib/*",
