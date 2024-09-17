@@ -119,7 +119,7 @@ export async function verifyCheckoutId(checkoutId, reference_number, upgradeFrom
         const response = await fetch(url, options);
         const verifiedPayload = await response.json();
 
-        const paid_at = verifiedPayload.data.attributes.paid_at;
+        const paid_at = verifiedPayload.data?.attributes?.paid_at || null;
         if (!paid_at) {
             console.log("Unpaid ID: " + verifiedPayload.data.id);
             return false; // Unable to verify

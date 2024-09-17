@@ -5,6 +5,7 @@ import { json } from '@sveltejs/kit';
 export async function POST({request}){
     try {
         const {reference_number, checkoutID, transaction_type} = await request.json();
+        console.log('Reference Number:' + reference_number + '| checkoutID:' + checkoutID + '| transaction_type:' + transaction_type);
         if(transaction_type === 'checkout_session.payment.paid'){
             //check first in the checkout_uid if this is an upgraded transaction
             const uid = reference_number.split('-').pop();
