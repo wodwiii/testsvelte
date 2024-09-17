@@ -1,7 +1,7 @@
 import { updateVerifiedList } from '$lib/payment/updateVerifiedList.js';
 import { json } from '@sveltejs/kit';
 
-export const revalidate = 0;
+export const dynamic = 'force-dynamic';
 
 export async function GET({url}){
     try {

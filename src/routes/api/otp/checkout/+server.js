@@ -5,7 +5,7 @@ import { auth } from '$lib/firebase/firebaseAdmin.js';
 import { getUserByUID } from '$lib/helper/getByUID';
 
 const allowed_checkout_plans = ['P1', 'P3', 'P12', 'L1', 'L3', 'L12'];
-
+export const dynamic = 'force-dynamic';
 export async function GET({ url }) {
     try {
         // Extract 'uid' and 'plan' from query parameters

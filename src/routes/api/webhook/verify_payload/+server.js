@@ -2,7 +2,7 @@ import { db } from '$lib/firebase/firebaseAdmin';
 import { verifyCheckoutId } from '$lib/payment/checkout.js';
 import { json } from '@sveltejs/kit';
 
-export const revalidate = 0;
+export const dynamic = 'force-dynamic';
 
 export async function POST({request}){
     try {

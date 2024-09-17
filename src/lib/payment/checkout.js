@@ -5,7 +5,7 @@ import { updateVerifiedList } from "./updateVerifiedList";
 
 const is_dev = `${import.meta.env.VITE_IS_DEV}`;
 const AUTH_TOKEN = `${import.meta.env.VITE_PAYMONGO_KEY2}`
-
+export const revalidate = 0;
 export async function createCheckout(uid, user, plan) {
     const transaction = transactionData(uid, user.email, plan);
     

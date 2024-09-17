@@ -1,5 +1,6 @@
 import { db } from "$lib/firebase/firebaseAdmin";
 const is_dev = `${import.meta.env.VITE_IS_DEV}`
+export const revalidate = 0;
 export async function saveToFirebase(table, payload) {
     // add format Feb 20, 2021 12:00:00 PM
     const date = new Date();
