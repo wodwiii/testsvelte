@@ -2,6 +2,8 @@ import { db } from '$lib/firebase/firebaseAdmin';
 import { verifyCheckoutId } from '$lib/payment/checkout.js';
 import { json } from '@sveltejs/kit';
 
+export const revalidate = 0;
+
 export async function POST({request}){
     try {
         const {reference_number, checkoutId, transaction_type} = await request.json();

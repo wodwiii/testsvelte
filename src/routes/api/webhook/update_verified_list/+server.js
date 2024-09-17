@@ -1,6 +1,8 @@
 import { updateVerifiedList } from '$lib/payment/updateVerifiedList.js';
 import { json } from '@sveltejs/kit';
 
+export const revalidate = 0;
+
 export async function GET({url}){
     try {
         await updateVerifiedList();
