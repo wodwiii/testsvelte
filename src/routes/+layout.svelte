@@ -9,7 +9,9 @@
 	/** @type {import('@sveltejs/adapter-vercel').Config} */
 	export const config = {
 		runtime: 'nodejs18.x',
-		maxDuration: 60
+		"api/*.js": {
+			"maxDuration": 60
+		}
 	};
 	onMount(() => {
 		const unsubscribe = auth.onAuthStateChanged((user) => {
